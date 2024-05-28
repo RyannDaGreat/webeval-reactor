@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import webeval from './webeval';
-import { Container, Header, Content, Sidebar, Button, ButtonGroup, Panel } from 'rsuite';
+import { CustomProvider, Container, Header, Content, Button, ButtonGroup } from 'rsuite';
 import { FolderFill, ArrowUpLine } from '@rsuite/icons';
 import Editor from '@monaco-editor/react';
-import { CustomProvider } from 'rsuite';
-
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
 const initPythonCode = `
 import os
@@ -20,6 +19,14 @@ def json_scandir(root):
         )
     ]
     return output
+
+def web_load_image(path):
+    name = rp.get_file_name(path)
+    image = rp.load_image(path)
+    image = rp.labeled_image(image, name)
+    image_bytes = rp.encode_image_to_bytes(image)
+    return image_bytes
+
 `;
 webeval.exeval(initPythonCode, {}, true);
 
@@ -86,14 +93,14 @@ function App() {
     return imageExtensions.includes(extension);
   };
 
-  return (
-    <CustomProvider theme="dark">
-      <Container className="app-container">
-        <Header>
-          <h2 className="app-header">File Browserator</h2>
-        </Header>
-        <Container className="app-content">
-          <Sidebar className="app-sidebar" width={250} collapsible>
+  return (    <CustomProvider theme="dark">
+    <Container className="app-container">
+      <Header>
+        <h2 className="app-header">File Browserator</h2>
+      </Header>
+      <Content>
+        <PanelGroup direction="horizontal" autoSaveId="persistence">
+          <Panel>
             <div className="current-path">
               <strong>Current Path:</strong>
               <br />
@@ -109,10 +116,12 @@ function App() {
                 </Button>
               ))}
             </ButtonGroup>
-          </Sidebar>
-          <Content className="app-main-content">
+          </Panel>
+          <PanelResizeHandle />
+          <Panel >
             {selectedFile && (
-              <Panel header={selectedFile} bordered>
+              <>
+                <h3>{selectedFile}</h3>
                 {isImageFile(selectedFile) ? (
                   <img src={`data:image/jpeg;base64,${fileContent}`} alt="Preview" style={{ maxWidth: '100%' }} />
                 ) : (
@@ -129,11 +138,12 @@ function App() {
                     }}
                   />
                 )}
-              </Panel>
+              </>
             )}
-          </Content>
-        </Container>
-      </Container>
+          </Panel>
+        </PanelGroup>
+      </Content>
+    </Container>
     </CustomProvider>
   );
 }
