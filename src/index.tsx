@@ -1,15 +1,25 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+import AppBrowser from './App';
+import AppCode from './CodeApp';
 import reportWebVitals from './reportWebVitals';
+import { Tabs, Placeholder } from 'rsuite';
+
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
   <React.StrictMode>
-    <App />
+    <Tabs defaultActiveKey="1">
+      <Tabs.Tab eventKey="1" title="Coder">
+        <AppCode />
+      </Tabs.Tab>
+      <Tabs.Tab eventKey="2" title="Browser">
+        <AppBrowser />
+      </Tabs.Tab>
+    </Tabs>
   </React.StrictMode>
 );
 
