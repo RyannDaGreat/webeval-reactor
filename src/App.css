@@ -80,3 +80,50 @@
   max-width: 100%;
   max-height: 400px;
 }
+
+.app-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+  padding: 20px;
+}
+
+.app-content {
+  flex: 1;
+  display: flex;
+}
+
+.app-sidebar {
+  background-color: #1a1d24;
+  padding: 20px;
+  transition: width 0.2s ease-in-out;
+}
+
+.app-sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.current-path {
+  margin-bottom: 20px;
+}
+
+.path-text {
+  font-size: 14px;
+  color: #fff;
+}
+
+.app-main-content {
+  padding: 20px;
+}

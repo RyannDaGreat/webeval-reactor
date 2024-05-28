@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import webeval from './webeval';
 import { Container, Header, Content, Sidebar, Button, ButtonGroup, Panel } from 'rsuite';
 import { FolderFill, ArrowUpLine } from '@rsuite/icons';
-import 'rsuite/dist/rsuite.min.css';
 import Editor from '@monaco-editor/react';
+import { CustomProvider } from 'rsuite';
+
 
 const initPythonCode = `
 import os
@@ -27,7 +28,6 @@ function App() {
   const [entries, setEntries] = useState<{ name: string; isDirectory: boolean }[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
-  const [fileExtension, setFileExtension] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEntries();
@@ -46,76 +46,95 @@ function App() {
     if (isDirectory) {
       setCurrentPath(fullPath);
     } else {
-      const response = await webeval.exeval(
-        "open(f, 'r').read()",
-        { f: fullPath }
-      );
-      setSelectedFile(fullPath);
-      setFileContent(response);
-      setFileExtension(item.split('.').pop() || null);
+      if (isImageFile(item)) {
+        const response = await webeval.exeval(
+          "base64.b64encode(open(f, 'rb').read()).decode('utf-8')",
+          { f: fullPath }
+        );
+        setSelectedFile(fullPath);
+        setFileContent(response);
+      } else {
+        const response = await webeval.exeval(
+          "open(f, 'r').read()",
+          { f: fullPath }
+        );
+        setSelectedFile(fullPath);
+        setFileContent(response);
+      }
     }
   };
 
   const handleGoUp = async () => {
-    let parentPath = currentPath + '/..';
-    parentPath = await webeval.exeval('os.path.relpath(x)', { x: parentPath });
+    const parentPath = await webeval.exeval(
+      'os.path.abspath(os.path.join(p, ".."))',
+      { p: currentPath }
+    );
     setCurrentPath(parentPath);
   };
 
-  const getEditorLanguage = () => {
-    switch (fileExtension) {
-      case 'json':
-        return 'json';
-      case 'tsx':
-      case 'ts':
-        return 'typescript';
-      case 'py':
-        return 'python';
-      default:
-        return 'plaintext';
-    }
+  const getEditorLanguage = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase() || '';
+    return extension;
+  };
+
+  const isImageFile = (fileName: string) => {
+    const imageExtensions = [
+      'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico', 'tiff', 'tif',
+      'heic', 'heif', 'avif', 'jfif', 'pjpeg', 'pjp', 'apng', 'jpe',
+    ];
+    const extension = fileName.split('.').pop()?.toLowerCase() || '';
+    return imageExtensions.includes(extension);
   };
 
   return (
-    <Container>
-      <Header>
-        <h2>File Browserator</h2>
-      </Header>
-      <Container>
-        <Sidebar>
-          <div className="current-path">
-            <strong>Current Path:</strong> {currentPath}
-          </div>
-          <ButtonGroup vertical block>
-            <Button onClick={handleGoUp}>
-              <ArrowUpLine /> Parent Directory
-            </Button>
-            {entries.map((entry, index) => (
-              <Button key={index} onClick={() => handleItemClick(entry.name, entry.isDirectory)}>
-                {entry.isDirectory ? <FolderFill /> : null} {entry.name}
+    <CustomProvider theme="dark">
+      <Container className="app-container">
+        <Header>
+          <h2 className="app-header">File Browserator</h2>
+        </Header>
+        <Container className="app-content">
+          <Sidebar className="app-sidebar" width={250} collapsible>
+            <div className="current-path">
+              <strong>Current Path:</strong>
+              <br />
+              <span className="path-text">{currentPath}</span>
+            </div>
+            <ButtonGroup vertical block>
+              <Button onClick={handleGoUp}>
+                <ArrowUpLine /> ..
               </Button>
-            ))}
-          </ButtonGroup>
-        </Sidebar>
-        <Content>
-          {selectedFile && fileContent && (
-            <Panel header={selectedFile}>
-              <Editor
-                height="400px"
-                defaultLanguage={getEditorLanguage()}
-                value={fileContent}
-                options={{
-                  readOnly: true,
-                  minimap: {
-                    enabled: true,
-                  },
-                }}
-              />
-            </Panel>
-          )}
-        </Content>
+              {entries.map((entry, index) => (
+                <Button key={index} onClick={() => handleItemClick(entry.name, entry.isDirectory)} block>
+                  {entry.isDirectory ? <FolderFill /> : null} {entry.name}
+                </Button>
+              ))}
+            </ButtonGroup>
+          </Sidebar>
+          <Content className="app-main-content">
+            {selectedFile && (
+              <Panel header={selectedFile} bordered>
+                {isImageFile(selectedFile) ? (
+                  <img src={`data:image/jpeg;base64,${fileContent}`} alt="Preview" style={{ maxWidth: '100%' }} />
+                ) : (
+                  <Editor
+                    height="400px"
+                    defaultLanguage={getEditorLanguage(selectedFile)}
+                    value={fileContent || ''}
+                    theme="vs-dark"
+                    options={{
+                      readOnly: true,
+                      minimap: {
+                        enabled: true,
+                      },
+                    }}
+                  />
+                )}
+              </Panel>
+            )}
+          </Content>
+        </Container>
       </Container>
-    </Container>
+    </CustomProvider>
   );
 }
 
