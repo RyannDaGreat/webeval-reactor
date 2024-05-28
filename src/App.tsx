@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import webeval from './webeval';
+import webeval from './rp';
 import { CustomProvider, Container, Header, Content, Button, ButtonGroup } from 'rsuite';
 import { FolderFill, ArrowUpLine } from '@rsuite/icons';
 import Editor from '@monaco-editor/react';
@@ -9,6 +9,7 @@ const initPythonCode = `
 import os
 import base64
 import rp
+
 
 def json_scandir(root):
     output = [
@@ -20,7 +21,7 @@ def json_scandir(root):
     ]
     return output
 
-def web_load_image(path):
+def load_image_bytes(path):
     name = rp.get_file_name(path)
     image = rp.load_image(path)
     image = rp.labeled_image(image, name)
@@ -29,6 +30,17 @@ def web_load_image(path):
 
 `;
 webeval.exeval(initPythonCode, {}, true);
+
+function Image(path:string) {
+  const url = webeval.buildQueryUrl(
+    '/webeval/web/bytes/webeval_image.png',
+    {
+        code: `load_image_bytes(${JSON.stringify(path)})`,
+        content_type: 'image/png',
+    }
+  );
+  return <img src={url}/>
+}
 
 function App() {
   const [currentPath, setCurrentPath] = useState<string>('.');
