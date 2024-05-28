@@ -4,57 +4,42 @@ import { Container, Header, Content, Sidebar, Button, ButtonGroup, Panel } from 
 import { FolderFill, ArrowUpLine } from '@rsuite/icons';
 import 'rsuite/dist/rsuite.min.css';
 
-
 const initPythonCode = `
 import os
 import base64
-`
-webeval.exeval(initPythonCode, {}, true)
+import rp
+
+def json_scandir(root):
+    output = [
+        {"name": entry.name, "isDirectory": entry.is_dir()}
+        for entry in sorted(
+            os.scandir(root),
+            key=lambda entry: (not entry.is_dir(), entry.path),
+        )
+    ]
+    return output
+`;
+webeval.exeval(initPythonCode, {}, true);
 
 function App() {
   const [currentPath, setCurrentPath] = useState<string>('.');
-  const [folders, setFolders] = useState<string[]>([]);
-  const [files, setFiles] = useState<string[]>([]);
+  const [entries, setEntries] = useState<{ name: string; isDirectory: boolean }[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchFiles();
+    fetchEntries();
   }, [currentPath]);
 
-  const fetchFiles = async () => {
+  const fetchEntries = async () => {
     const response = await webeval.exeval(
-      '[f for f in os.listdir(p)]',
+      'json_scandir(p)',
       { p: currentPath }
     );
-
-    const updatedFolders = [];
-    const updatedFiles = [];
-
-    for (const item of response) {
-      const fullPath = `${currentPath}/${item}`;
-      const isDirectory = await webeval.exeval(
-        'os.path.isdir(p)',
-        { p: fullPath }
-      );
-
-      if (isDirectory) {
-        updatedFolders.push(item);
-      } else {
-        updatedFiles.push(item);
-      }
-    }
-
-    setFolders(updatedFolders);
-    setFiles(updatedFiles);
+    setEntries(response);
   };
 
-  const handleItemClick = async (item: string) => {
+  const handleItemClick = async (item: string, isDirectory: boolean) => {
     const fullPath = `${currentPath}/${item}`;
-    const isDirectory = await webeval.exeval(
-      'os.path.isdir(p)',
-      { p: fullPath }
-    );
-
     if (isDirectory) {
       setCurrentPath(fullPath);
     } else {
@@ -64,6 +49,13 @@ function App() {
       );
       setSelectedFile(`data:image/jpeg;base64,${response}`);
     }
+  };
+
+  const handleGoUp = async () => {
+    // const parentPath = currentPath.split('/').slice(0, -1).join('/') || '.';
+    let parentPath = currentPath + '/..'
+    parentPath = await webeval.exeval('os.path.relpath(x)', { x: parentPath })
+    setCurrentPath(parentPath);
   };
 
   return (
@@ -77,19 +69,12 @@ function App() {
             <strong>Current Path:</strong> {currentPath}
           </div>
           <ButtonGroup vertical block>
-            {currentPath !== '.' && (
-              <Button onClick={() => setCurrentPath(currentPath.split('/').slice(0, -1).join('/') || '.')}>
-                <ArrowUpLine /> Parent Directory
-              </Button>
-            )}
-            {folders.map((folder, index) => (
-              <Button key={index} onClick={() => handleItemClick(folder)}>
-                <FolderFill /> {folder}
-              </Button>
-            ))}
-            {files.map((file, index) => (
-              <Button key={index} onClick={() => handleItemClick(file)}>
-                 {file}
+            <Button onClick={handleGoUp}>
+              <ArrowUpLine /> Parent Directory
+            </Button>
+            {entries.map((entry, index) => (
+              <Button key={index} onClick={() => handleItemClick(entry.name, entry.isDirectory)}>
+                {entry.isDirectory ? <FolderFill /> : null} {entry.name}
               </Button>
             ))}
           </ButtonGroup>
