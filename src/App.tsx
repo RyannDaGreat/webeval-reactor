@@ -24,6 +24,8 @@ def json_scandir(root):
 def load_image_bytes(path):
     name = rp.get_file_name(path)
     image = rp.load_image(path)
+    image = rp.rotate_image(image, 45)
+    image = rp.resize_image_to_fit(image, 256, 256)
     image = rp.labeled_image(image, name)
     image_bytes = rp.encode_image_to_bytes(image)
     return image_bytes
@@ -31,16 +33,19 @@ def load_image_bytes(path):
 `;
 webeval.exeval(initPythonCode, {}, true);
 
-function Image(path:string) {
+
+function Image({ path, ...imgProps }: { path: string;[key: string]: any }) {
   const url = webeval.buildQueryUrl(
     '/webeval/web/bytes/webeval_image.png',
     {
-        code: `load_image_bytes(${JSON.stringify(path)})`,
-        content_type: 'image/png',
+      code: `load_image_bytes(${JSON.stringify(path)})`,
+      content_type: 'image/png',
     }
   );
-  return <img src={url}/>
+
+  return <img src={url} {...imgProps} />;
 }
+
 
 function App() {
   const [currentPath, setCurrentPath] = useState<string>('.');
@@ -105,7 +110,7 @@ function App() {
     return imageExtensions.includes(extension);
   };
 
-  return (    <CustomProvider theme="dark">
+  return (<CustomProvider theme="dark">
     <Container className="app-container">
       <Header>
         <h2 className="app-header">File Browserator</h2>
@@ -135,7 +140,9 @@ function App() {
               <>
                 <h3>{selectedFile}</h3>
                 {isImageFile(selectedFile) ? (
-                  <img src={`data:image/jpeg;base64,${fileContent}`} alt="Preview" style={{ maxWidth: '100%' }} />
+                  // <img src={`data:image/jpeg;base64,${fileContent}`} alt="Preview" style={{ maxWidth: '100%' }} />
+                  <Image path={selectedFile} style={{ maxWidth: '100%' }} />
+
                 ) : (
                   <Editor
                     height="400px"
@@ -156,7 +163,7 @@ function App() {
         </PanelGroup>
       </Content>
     </Container>
-    </CustomProvider>
+  </CustomProvider>
   );
 }
 
