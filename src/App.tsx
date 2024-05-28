@@ -3,6 +3,7 @@ import webeval from './webeval';
 import { Container, Header, Content, Sidebar, Button, ButtonGroup, Panel } from 'rsuite';
 import { FolderFill, ArrowUpLine } from '@rsuite/icons';
 import 'rsuite/dist/rsuite.min.css';
+import Editor from '@monaco-editor/react';
 
 const initPythonCode = `
 import os
@@ -25,6 +26,8 @@ function App() {
   const [currentPath, setCurrentPath] = useState<string>('.');
   const [entries, setEntries] = useState<{ name: string; isDirectory: boolean }[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileExtension, setFileExtension] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEntries();
@@ -44,18 +47,33 @@ function App() {
       setCurrentPath(fullPath);
     } else {
       const response = await webeval.exeval(
-        "base64.b64encode(open(f, 'rb').read()).decode('utf-8')",
+        "open(f, 'r').read()",
         { f: fullPath }
       );
-      setSelectedFile(`data:image/jpeg;base64,${response}`);
+      setSelectedFile(fullPath);
+      setFileContent(response);
+      setFileExtension(item.split('.').pop() || null);
     }
   };
 
   const handleGoUp = async () => {
-    // const parentPath = currentPath.split('/').slice(0, -1).join('/') || '.';
-    let parentPath = currentPath + '/..'
-    parentPath = await webeval.exeval('os.path.relpath(x)', { x: parentPath })
+    let parentPath = currentPath + '/..';
+    parentPath = await webeval.exeval('os.path.relpath(x)', { x: parentPath });
     setCurrentPath(parentPath);
+  };
+
+  const getEditorLanguage = () => {
+    switch (fileExtension) {
+      case 'json':
+        return 'json';
+      case 'tsx':
+      case 'ts':
+        return 'typescript';
+      case 'py':
+        return 'python';
+      default:
+        return 'plaintext';
+    }
   };
 
   return (
@@ -80,9 +98,19 @@ function App() {
           </ButtonGroup>
         </Sidebar>
         <Content>
-          {selectedFile && (
-            <Panel header="File Preview">
-              <img src={selectedFile} alt="Preview" style={{ maxWidth: '100%' }} />
+          {selectedFile && fileContent && (
+            <Panel header={selectedFile}>
+              <Editor
+                height="400px"
+                defaultLanguage={getEditorLanguage()}
+                value={fileContent}
+                options={{
+                  readOnly: true,
+                  minimap: {
+                    enabled: true,
+                  },
+                }}
+              />
             </Panel>
           )}
         </Content>
