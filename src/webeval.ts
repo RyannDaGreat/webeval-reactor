@@ -67,7 +67,7 @@ const webeval = {
 	 * @param sync - Whether to execute the code synchronously or asynchronously.
 	 * @returns A promise that resolves to the evaluation result.
 	 */
-	evaluate: async function (code: string, vars: Record<string, any> = {}, sync = true): Promise<EvaluationResult> {
+	evaluate: async function (code: string, vars: Record<string, any> = {}, sync = false): Promise<EvaluationResult> {
 		const response = await fetch('/webeval/web/evaluate', {
 			method: 'POST',
 			headers: {
@@ -83,7 +83,7 @@ const webeval = {
 		return await response.json();
 	},
 
-	exeval: async function (code: string, vars: Record<string, any> = {}, sync = true): Promise<any> {
+	exeval: async function (code: string, vars: Record<string, any> = {}, sync = false): Promise<any> {
 		const result = await webeval.evaluate(code, vars, sync);
 		if (result.errored) {
 			const errorMessage = "rp.webeval.evaluate.errored: ";

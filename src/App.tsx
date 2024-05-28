@@ -2,16 +2,6 @@ import React, { useState, useEffect } from 'react';
 import webeval from './webeval';
 import './App.css';
 
-async function exeval(code: string, vars: Record<string, any> = {}, sync = true): Promise<any> {
-	const result = await webeval.evaluate(code, vars, sync);
-	if (result.errored) {
-		const errorMessage = "rp.webeval.evaluate.errored: ";
-		console.error(errorMessage, result);
-		throw new Error(errorMessage + result.error);
-	}
-	return result.value;
-}
-
 function App() {
 	const [files, setFiles] = useState<string[]>([]);
 	const [selectedFile, setSelectedFile] = useState<string | null>(null);
@@ -21,14 +11,14 @@ function App() {
 	}, []);
 
 	const fetchFiles = async () => {
-		const response = await exeval(
+		const response = await webeval.exeval(
 			'[".."]+[f for f in __import__("os").listdir() if __import__("os").path.isfile(f)]'
 		);
 		setFiles(response);
 	};
 
 	const handleFileClick = async (file: string) => {
-		const response = await exeval(
+		const response = await webeval.exeval(
 			"__import__('base64').b64encode(open(f, 'rb').read()).decode('utf-8')",
 			{ f: file }
 		);
