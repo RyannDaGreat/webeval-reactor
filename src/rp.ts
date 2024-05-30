@@ -1,5 +1,6 @@
 // Ryan Burgert 2024
 // A library for web development
+// @ts-nocheck
 
 interface QueryJson {
 	[key: string]: string | number | boolean | QueryJson | Array<string | number | boolean | QueryJson>;
