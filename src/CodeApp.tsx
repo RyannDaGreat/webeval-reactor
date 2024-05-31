@@ -17,6 +17,7 @@ import webeval from './rp';
 import { CustomProvider, Container, Header, Content } from 'rsuite';
 import Editor from '@monaco-editor/react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { text } from 'node:stream/consumers';
 
 const exeval_toaster = async (
     code,
@@ -84,10 +85,11 @@ interface IntegerControlProps {
 
 
 
-const IntegerControl: React.FC<IntegerControlProps> = ({ value, min = -Infinity, max = Infinity, onChange }) => {
+const IntegerControl: React.FC<IntegerControlProps> = ({ value, min = -Infinity, max = Infinity, onChange, onSave }) => {
     const handleChange = (value: string | number | null) => {
         if (value !== null && value >= min && value <= max) {
             onChange(value as number);
+            onSave();
         } else {
             toaster.push(
                 <Notification type="warning" header="Error" closable>
@@ -117,7 +119,11 @@ interface TagTextInputProps {
     onChange: (value: string) => void;
 }
 
-const TagTextInput: React.FC<TagTextInputProps> = ({ value, tags = [], onChange }) => {
+const TagTextInput: React.FC<TagTextInputProps> = ({ value, tags = [], onChange, onSave }) => {
+    return (
+        //Disabled the highlighting because it only worked when clicking the checkbox - not the enter key
+        <InlineEdit defaultValue={value} style={{ width: '100%' }} onChange={onChange} onSave={onSave}/>
+    )
     return (
         <InlineEdit defaultValue={value} style={{ width: '100%' }}>
             {(props: any, ref: any) => {
@@ -140,13 +146,14 @@ interface IntegerTagControlsProps {
     onChange: (values: Record<string, number>) => void;
 }
 
-const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChange }) => {
+const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChange, onSave }) => {
     const handleTagChange = (tags: string[]) => {
         const newValues: Record<string, number> = {};
         tags.forEach((tag) => {
             newValues[tag] = values[tag] || 0;
         });
         onChange(newValues);
+        onSave();
     };
 
     const handleIntegerChange = (tag: string, value: number) => {
@@ -170,6 +177,7 @@ const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChang
                             value={value}
                             min={0}
                             onChange={(newValue) => handleIntegerChange(tag, newValue as number)}
+                            onSave={onSave}
                         />
                     </div>
                 ))}
@@ -188,7 +196,7 @@ interface ControlProps {
     onChange: (value: number | string | Record<string, number>) => void;
 }
 
-const Control: React.FC<ControlProps> = ({ name, description, type, value, min, max, tags, onChange }) => {
+const Control: React.FC<ControlProps> = ({ name, description, type, value, min, max, tags, onChange, onSave }) => {
     let output = "Error: Bad Control";
     if (type === 'integer') {
         output = (
@@ -197,6 +205,7 @@ const Control: React.FC<ControlProps> = ({ name, description, type, value, min, 
                 min={min}
                 max={max}
                 onChange={onChange as (value: number) => void}
+                onSave={onSave}
             />
         );
     } else if (type === 'text') {
@@ -205,6 +214,7 @@ const Control: React.FC<ControlProps> = ({ name, description, type, value, min, 
                 value={value as string}
                 tags={tags}
                 onChange={onChange as (value: string) => void}
+                onSave={onSave}
             />
         );
     } else if (type === 'integerTags') {
@@ -212,6 +222,8 @@ const Control: React.FC<ControlProps> = ({ name, description, type, value, min, 
             <IntegerTagControls
                 values={value as Record<string, number>}
                 onChange={onChange as (values: Record<string, number>) => void}
+                onSave={onSave}
+
             />
         );
     }
@@ -237,7 +249,7 @@ interface ControlsProps {
     onChange: (name: string, value: number | string | Record<string, number>) => void;
 }
 
-const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
+const Controls: React.FC<ControlsProps> = ({ state, onChange, onSave }) => {
     return (
         <div>
             {Object.entries(state).map(([name, controlState]) => {
@@ -253,6 +265,7 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
                             max={max}
                             tags={tags}
                             onChange={(newValue) => onChange(name, newValue)}
+                            onSave = {onSave}
                         />
                     </div>
                 );
@@ -268,7 +281,14 @@ const PathSearcher: React.FC = () => {
     const pathVarsInit = { x: 0 }
     const pathVarsName = "PathVars"
 
-    const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
+    const [state, setState] = React.useState<Record<string, {
+        type: 'integer' | 'text' | 'integerTags';
+        value: number | string | Record<string, number>;
+        description?: string;
+        min?: number;
+        max?: number;
+        tags?: string[];
+    }>>({
         [pathQueryName]: {
             type: 'text',
             value: pathQueryInit,
@@ -283,6 +303,7 @@ const PathSearcher: React.FC = () => {
     });
     const [pythonImageCode, setPythonImageCode]  = React.useState(initPythonCode)
     const [paths, setPaths] = React.useState([]) //list of strings
+    const [saved, setSaved] = React.useState(false);
 
 
     const updatePaths = async () => {
@@ -300,6 +321,7 @@ const PathSearcher: React.FC = () => {
     }
 
     const handleChange = (name: string, value: number | string | Record<string, number>) => {
+        console.log('IU',name,value)
         setState((prevState) => {
             const newState = { ...prevState, [name]: { ...prevState[name], value } };
 
@@ -312,14 +334,20 @@ const PathSearcher: React.FC = () => {
     };
 
     React.useEffect(() => {
-        updatePaths();
-    }, [state[pathQueryName], state[pathVarsName]]);
+        if (!saved) {
+            updatePaths();
+            setSaved(true);
+        }
+    }, [saved]);
     
+    const onSave=()=>{
+        setSaved(false);
+    }
 
     return (
         <Accordion>
             <Accordion.Panel header="Search Options" defaultExpanded>
-                <Controls state={state} onChange={handleChange} />
+                <Controls state={state} onChange={handleChange} onSave={onSave}/>
             </Accordion.Panel>
             <Accordion.Panel header={"Searched Paths ["+paths.length+"]"} defaultExpanded>
                 <Editor
