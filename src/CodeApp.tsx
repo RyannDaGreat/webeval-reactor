@@ -113,21 +113,22 @@ const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChang
                 value={Object.keys(values)}
                 onChange={handleTagChange}
             />
-            <br />
-            <br />
-            {Object.entries(values).map(([tag, value]) => (
-                <Control
-                    key={tag}
-                    name={tag}
-                    type="integer"
-                    value={value}
-                    min={0}
-                    onChange={(newValue) => handleIntegerChange(tag, newValue as number)}
-                />
-            ))}
+            <div style={{ paddingTop: '16px' }}>
+                {Object.entries(values).map(([tag, value]) => (
+                    <div key={tag} style={{ paddingTop: '8px' }}>
+                        <Control
+                            name={tag}
+                            type="integer"
+                            value={value}
+                            min={0}
+                            onChange={(newValue) => handleIntegerChange(tag, newValue as number)}
+                        />
+                    </div>
+                ))}
+            </div>
         </div>
     );
-};
+                }
 interface ControlProps {
     name: string;
     description?: string;
@@ -211,6 +212,48 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
         </List>
     );
 };
+
+
+const PathSearcher: React.FC = () => {
+    const pathQueryInit="/Users/ryan/*{x}*"
+    const pathQueryName="PathQuery"
+    const pathVarsInit={x:0}
+    const pathVarsName="PathVars"
+
+    const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
+        [ pathQueryName]: {
+            type: 'text',
+            value: pathQueryInit,
+            description: 'Enter a python f-string, using PathVars as variables',
+            tags: Object.keys(pathVarsInit),
+        },
+        [pathVarsName]: {
+            type: 'integerTags',
+            value: pathVarsInit,
+            description: 'Set numerical values for the path replacements',
+        },
+    });
+
+
+    const handleChange = (name: string, value: number | string | Record<string, number>) => {
+        setState((prevState) => {
+            const newState = { ...prevState, [name]: { ...prevState[name], value } };
+
+            if (name === pathVarsName) {
+                newState[pathVarsName].tags = Object.keys(value as Record<string, number>);
+            }
+
+            return newState;
+        });
+    };
+
+    return (
+        <div style={{ padding: 20 }}>
+            <Controls state={state} onChange={handleChange} />
+        </div>
+    );
+}
+
 const App: React.FC = () => {
     const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
         A: { type: 'integer', min: -999, max: 999, description: 'The first one', value: 123 },
@@ -242,7 +285,8 @@ const App: React.FC = () => {
 
     return (
         <div style={{ padding: 20 }}>
-            <Controls state={state} onChange={handleChange} />
+            <PathSearcher/>
+            {/* <Controls state={state} onChange={handleChange} /> */}
         </div>
     );
 };
