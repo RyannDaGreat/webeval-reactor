@@ -6,12 +6,25 @@ import { toaster } from 'rsuite';
 import { List, Grid, Row, Col } from 'rsuite';
 import { Accordion } from 'rsuite';
 
+import ReadyRoundIcon from '@rsuite/icons/ReadyRound';
+import { IconButton, ButtonToolbar } from 'rsuite';
+
 import { InputNumber, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
 
 import webeval from './rp';
 
+import { CustomProvider, Container, Header, Content } from 'rsuite';
+import Editor from '@monaco-editor/react';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
-const exeval_toaster = async (code, vars = {}, sync = false) => {
+const exeval_toaster = async (
+    code,
+    { squelch, sync, vars } = {
+        squelch: true,
+        sync: false,
+        vars: {}
+    }
+) => {
     try {
 
         const result = await webeval.exeval(code, vars, sync);
@@ -24,16 +37,17 @@ const exeval_toaster = async (code, vars = {}, sync = false) => {
             { placement: 'topEnd', duration: 10000 }
         );
         console.error(e);
-        // throw e;
+        if (!squelch) {
+            throw e;
+        }
     }
 }
 
 
 const initPythonCode = `
-import os
-import base64
 import rp
 import glob
+from icecream import ic
 
 
 def glob_search(query: str, replacements: dict):
@@ -44,13 +58,26 @@ def glob_search(query: str, replacements: dict):
     """
     query = query.format(**replacements)
     paths = glob.glob(query)
-    print(rp.line_join(paths))
-    print(query)
+    ic(query,paths)
 
     return paths
 `;
+exeval_toaster(initPythonCode,{sync:true});
 
-exeval_toaster(initPythonCode);
+
+const initPythonImageCode = `
+import rp
+
+def load_image_bytes(path):
+    name = rp.get_file_name(path)
+    image = rp.load_image(path)
+    image = rp.rotate_image(image, 45)
+    image = rp.resize_image_to_fit(image, 256, 256)
+    image = rp.labeled_image(image, name)
+    image_bytes = rp.encode_image_to_bytes(image)
+    return image_bytes
+`;
+exeval_toaster(initPythonImageCode,{sync:true});
 
 
 interface IntegerControlProps {
@@ -217,11 +244,13 @@ interface ControlsProps {
 
 const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
     return (
-        <List>
+        <div>
+        {/* // <List> */}
             {Object.entries(state).map(([name, controlState]) => {
                 const { type, value, description, min, max, tags } = controlState;
                 return (
-                    <List.Item key={name}>
+                    // <List.Item key={name}>
+                    <div key={name}>
                         <Control
                             name={name}
                             description={description}
@@ -232,15 +261,18 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
                             tags={tags}
                             onChange={(newValue) => onChange(name, newValue)}
                         />
-                    </List.Item>
+                        </div>
+                    // </List.Item>
                 );
             })}
-        </List>
+        {/* // </List> */}
+        </div>
     );
 };
 
 
 const PathSearcher: React.FC = () => {
+    //TODO: Bubble up state
     const pathQueryInit = "/Users/ryan/*{x}*"
     const pathQueryName = "PathQuery"
     const pathVarsInit = { x: 0 }
@@ -267,8 +299,10 @@ const PathSearcher: React.FC = () => {
         const paths = await exeval_toaster(
             "glob_search(query,replacements)",
             {
-                query: state[pathQueryName].value,
-                replacements: state[pathVarsName].value,
+                vars: {
+                    query: state[pathQueryName].value,
+                    replacements: state[pathVarsName].value,
+                }
             }
         )
         setPaths(paths)
@@ -288,11 +322,32 @@ const PathSearcher: React.FC = () => {
     };
 
     return (
-        <div style={{ padding: 20 }}>
-            <Controls state={state} onChange={handleChange} />
-            
-        </div>
+        <Accordion>
+            <Accordion.Panel header="Search Options" defaultExpanded>
+                <Controls state={state} onChange={handleChange} />
+            </Accordion.Panel>
+            <Accordion.Panel header="Searched Paths" defaultExpanded>
+                <Editor
+                    height="400px"
+                    defaultLanguage="json"
+                    value={paths.join("\n")}
+                    theme="vs-dark"
+                    options={{
+                        readOnly: true,
+                        minimap: { enabled: true },
+                    }}
+                />
+            </Accordion.Panel>
+        </Accordion>
     );
+}
+
+const ExevalEditor: React.FC =  () => {
+    return (
+    <ButtonToolbar>
+    <IconButton icon={<ReadyRoundIcon />}>Search</IconButton>
+  </ButtonToolbar>
+    )
 }
 
 const App: React.FC = () => {
@@ -327,6 +382,7 @@ const App: React.FC = () => {
     return (
         <div style={{ padding: 20 }}>
             <PathSearcher />
+            <ExevalEditor/>
             {/* <Controls state={state} onChange={handleChange} /> */}
         </div>
     );
