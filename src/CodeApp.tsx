@@ -6,39 +6,21 @@ import { List } from 'rsuite';
 
 import { InputNumber, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
 
-interface LabeledControlProps {
-    name: string;
-    description?: string;
-    children: React.ReactNode;
-}
-
-const LabeledControl: React.FC<LabeledControlProps> = ({ name, description = '', children }) => {
-    return (
-        <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 2fr', alignItems: 'center', marginBottom: 10, gap: '12px' }}>
-            <span style={{ fontWeight: 'bold', color: 'white', textAlign: 'right' }}>{name}</span>
-            {children}
-            <span style={{ fontStyle: 'italic', color: '#999' }}>{description}</span>
-        </div>
-    );
-};
-
 interface IntegerControlProps {
-    name: string;
     value: number;
-    description?: string;
     min?: number;
     max?: number;
-    onChange: (name: string, value: number) => void;
+    onChange: (value: number) => void;
 }
 
-const IntegerControl: React.FC<IntegerControlProps> = ({ name, value, description = '', min = -Infinity, max = Infinity, onChange }) => {
+const IntegerControl: React.FC<IntegerControlProps> = ({ value, min = -Infinity, max = Infinity, onChange }) => {
     const handleChange = (value: string | number | null) => {
         if (value !== null && value >= min && value <= max) {
-            onChange(name, value as number);
+            onChange(value as number);
         } else {
             toaster.push(
                 <Notification type="warning" header="Error" closable>
-                    {`${name} must be between ${min} and ${max}.`}
+                    {`Value must be between ${min} and ${max}.`}
                 </Notification>,
                 { placement: 'topEnd' }
             );
@@ -46,101 +28,128 @@ const IntegerControl: React.FC<IntegerControlProps> = ({ name, value, descriptio
     };
 
     return (
-        <LabeledControl name={name} description={description}>
-            <InputNumber
-                value={value}
-                onChange={handleChange}
-                min={min}
-                max={max}
-                step={1}
-                size="md"
-                style={{ width: 'max(100pt,10%)' }}
-            />
-        </LabeledControl>
+        <InputNumber
+            value={value}
+            onChange={handleChange}
+            min={min}
+            max={max}
+            step={1}
+            size="md"
+            style={{ width: 'max(60pt,10%)' }}
+        />
     );
 };
 
 interface TagTextInputProps {
-    name: string;
     value: string;
-    description?: string;
     tags?: string[];
-    onChange: (name: string, value: string) => void;
+    onChange: (value: string) => void;
 }
 
-const TagTextInput: React.FC<TagTextInputProps> = ({ name, value, description = '', tags = [], onChange }) => {
+const TagTextInput: React.FC<TagTextInputProps> = ({ value, tags = [], onChange }) => {
     return (
-        <LabeledControl name={name} description={description}>
-            <InlineEdit defaultValue={value} style={{ width: '100%' }}>
-                {(props: any, ref: any) => {
-                    const { value, onChange: onEditChange, plaintext, ...rest } = props;
+        <InlineEdit defaultValue={value} style={{ width: '100%' }}>
+            {(props: any, ref: any) => {
+                const { value, onChange: onEditChange, plaintext, ...rest } = props;
 
-                    if (plaintext) {
-                        return <Highlight query={tags}>{value}</Highlight>;
-                    }
+                if (plaintext) {
+                    return <Highlight query={tags}>{value}</Highlight>;
+                }
 
-                    return <Input {...rest} as="input" ref={ref} value={value} onChange={onEditChange} onBlur={(event) => {
-                        onChange(name, event.target.value);
-                    }} />;
-                }}
-            </InlineEdit>
-        </LabeledControl>
+                return <Input {...rest} as="input" ref={ref} value={value} onChange={onEditChange} onBlur={(event) => {
+                    onChange(event.target.value);
+                }} />;
+            }}
+        </InlineEdit>
     );
 };
 
-interface ControlsProps {
-    state: Record<string, { type: 'integer' | 'text'; value: number | string; description?: string; min?: number; max?: number; tags?: string[] }>;
-    onChange: (name: string, value: number | string) => void;
-}
-
-
-
-
-
-
-
 interface IntegerTagControlsProps {
-    name: string;
     values: Record<string, number>;
-    description?: string;
-    onChange: (name: string, values: Record<string, number>) => void;
+    onChange: (values: Record<string, number>) => void;
 }
 
-const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ name, values, description = '', onChange }) => {
+const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChange }) => {
     const handleTagChange = (tags: string[]) => {
         const newValues: Record<string, number> = {};
         tags.forEach((tag) => {
             newValues[tag] = values[tag] || 0;
         });
-        onChange(name, newValues);
+        onChange(newValues);
     };
 
     const handleIntegerChange = (tag: string, value: number) => {
-        onChange(name, { ...values, [tag]: value });
+        onChange({ ...values, [tag]: value });
     };
 
     return (
-        <LabeledControl name={name} description={description}>
-            <div>
-                <TagInput
-                    style={{ width: '100%' }}
-                    trigger={['Enter', 'Space', 'Comma']}
-                    value={Object.keys(values)}
-                    onChange={handleTagChange}
+        <div>
+            <TagInput
+                style={{ width: '100%' }}
+                trigger={['Enter', 'Space', 'Comma']}
+                value={Object.keys(values)}
+                onChange={handleTagChange}
+            />
+            <br />
+            <br />
+            {Object.entries(values).map(([tag, value]) => (
+                <Control
+                    key={tag}
+                    name={tag}
+                    type="integer"
+                    value={value}
+                    min={0}
+                    onChange={(newValue) => handleIntegerChange(tag, newValue as number)}
                 />
-                <br />
-                <br />
-                {Object.entries(values).map(([tag, value]) => (
-                    <IntegerControl
-                        key={tag}
-                        name={tag}
-                        value={value}
-                        min={0}
-                        onChange={(_, newValue) => handleIntegerChange(tag, newValue)}
-                    />
-                ))}
-            </div>
-        </LabeledControl>
+            ))}
+        </div>
+    );
+};
+
+interface ControlProps {
+    name: string;
+    description?: string;
+    type: 'integer' | 'text' | 'integerTags';
+    value: number | string | Record<string, number>;
+    min?: number;
+    max?: number;
+    tags?: string[];
+    onChange: (value: number | string | Record<string, number>) => void;
+}
+
+const Control: React.FC<ControlProps> = ({ name, description, type, value, min, max, tags, onChange }) => {
+    let output = "Error: Bad Control";
+    if (type === 'integer') {
+        output = (
+            <IntegerControl
+                value={value as number}
+                min={min}
+                max={max}
+                onChange={onChange as (value: number) => void}
+            />
+        );
+    } else if (type === 'text') {
+        output = (
+            <TagTextInput
+                value={value as string}
+                tags={tags}
+                onChange={onChange as (value: string) => void}
+            />
+        );
+    } else if (type === 'integerTags') {
+        output = (
+            <IntegerTagControls
+                values={value as Record<string, number>}
+                onChange={onChange as (values: Record<string, number>) => void}
+            />
+        );
+    }
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: '50% 1fr 2fr', alignItems: 'center', marginBottom: 10, gap: '12px' }}>
+            <span style={{ fontWeight: 'bold', color: 'white', textAlign: 'right' }}>{name}</span>
+            {output}
+            <span style={{ fontStyle: 'italic', color: '#999' }}>{description}</span>
+        </div>
     );
 };
 
@@ -152,52 +161,23 @@ interface ControlsProps {
 const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
     return (
         <List>
-            {
-                Object.entries(state).map(
-                    ([name, controlState]) => {
-                        let output="Error: Bad Control"
-                        const { type, value, description, min, max, tags } = controlState;
-                        if (type === 'integer') {
-                             output = (
-                                <IntegerControl
-                                    key={name}
-                                    name={name}
-                                    value={value as number}
-                                    description={description}
-                                    min={min}
-                                    max={max}
-                                    onChange={onChange}
-                                />
-                            );
-                        } else if (type === 'text') {
-                             output = (
-                                <TagTextInput
-                                    key={name}
-                                    name={name}
-                                    value={value as string}
-                                    description={description}
-                                    tags={tags}
-                                    onChange={onChange}
-                                />
-                            );
-                        } else if (type === 'integerTags') {
-                             output = (
-                                <IntegerTagControls
-                                    key={name}
-                                    name={name}
-                                    values={value as Record<string, number>}
-                                    description={description}
-                                    onChange={onChange}
-                                />
-                            );
-                        }
-                        output = <List.Item>
-                            {output}
-                        </List.Item>
-                        return output
-                    }
-                )
-            }
+            {Object.entries(state).map(([name, controlState]) => {
+                const { type, value, description, min, max, tags } = controlState;
+                return (
+                    <List.Item key={name}>
+                        <Control
+                            name={name}
+                            description={description}
+                            type={type}
+                            value={value}
+                            min={min}
+                            max={max}
+                            tags={tags}
+                            onChange={(newValue) => onChange(name, newValue)}
+                        />
+                    </List.Item>
+                );
+            })}
         </List>
     );
 };
