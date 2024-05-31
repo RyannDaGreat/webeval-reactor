@@ -587,22 +587,27 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     unCheckedChildren="Hide Deselected"
                 />
             </ButtonToolbar>
-            <Grid fluid>
-                <Row>
-                    {filteredPaths.map((path, index) => (
-                        <Col key={index} style={{ width: columnWidth }}>
-                            <Image
-                                path={path}
-                                cacheKey={cacheKey}
-                                isSelected={selectedPaths.includes(path)}
-                                onSelect={handleSelectPath}
-                                style={{ width: '90%', height: 'auto' }}
-                                {...imgProps}
-                            />
-                        </Col>
-                    ))}
-                </Row>
-            </Grid>
+            <br/>
+            <div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: `repeat(${numColumns}, 1fr)`,
+    gap: '10px',
+  }}
+>
+  {filteredPaths.map((path, index) => (
+    <div key={index}>
+      <Image
+        path={path}
+        cacheKey={cacheKey}
+        isSelected={selectedPaths.includes(path)}
+        onSelect={handleSelectPath}
+        style={{ width: '100%', height: 'auto' }}
+        {...imgProps}
+      />
+    </div>
+  ))}
+</div>
         </>
     );
 }
