@@ -471,8 +471,6 @@ function Image({ path, cacheKey, isSelected, onSelect, ...imgProps }) {
         <div style={{
             textAlign: 'center',
             position: 'relative',
-            filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
-            transition: 'filter 0.3s',
             border: isSelected ? '2px dashed yellow' : 'none',
             boxShadow: isSelected ? '0 0 5px black' : 'none',
 
@@ -483,6 +481,8 @@ function Image({ path, cacheKey, isSelected, onSelect, ...imgProps }) {
                     Loading...
                 </div>
             )}
+<div style={{            filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
+            transition: 'filter 0.3s',}}>
             {hasError && (
                 <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1 }}>
                     Error
@@ -495,7 +495,7 @@ function Image({ path, cacheKey, isSelected, onSelect, ...imgProps }) {
                 onError={handleImageError}
 
                 {...imgProps}
-            />
+            /></div>
         </div>
     );
 }
