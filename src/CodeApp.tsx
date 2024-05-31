@@ -7,6 +7,28 @@ import { List, Grid, Row, Col } from 'rsuite';
 
 import { InputNumber, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
 
+import webeval from './rp';
+const initPythonCode = `
+import os
+import base64
+import rp
+import glob
+
+
+def glob_search(query: str, replacements: dict):
+    """
+    Query is like "/path/to/{x:05}/image_*/{y}.png"
+    Replacements is like {"x":5,"y":100}
+    Returns a list of globbed paths
+    """
+    query = query.format(**replacements)
+    return glob.glob(query)
+
+
+`;
+
+
+webeval.exeval(initPythonCode, {}, true);
 interface IntegerControlProps {
     value: number;
     min?: number;
@@ -189,7 +211,6 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
         </List>
     );
 };
-
 const App: React.FC = () => {
     const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
         A: { type: 'integer', min: -999, max: 999, description: 'The first one', value: 123 },
@@ -208,7 +229,15 @@ const App: React.FC = () => {
     });
 
     const handleChange = (name: string, value: number | string | Record<string, number>) => {
-        setState((prevState) => ({ ...prevState, [name]: { ...prevState[name], value } }));
+        setState((prevState) => {
+            const newState = { ...prevState, [name]: { ...prevState[name], value } };
+
+            if (name === 'TagIntegers') {
+                newState.Text.tags = Object.keys(value as Record<string, number>);
+            }
+
+            return newState;
+        });
     };
 
     return (

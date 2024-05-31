@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import webeval from './rp';
 import { CustomProvider, Container, Header, Content, Button, ButtonGroup } from 'rsuite';
 import { FolderFill, ArrowUpLine } from '@rsuite/icons';
 import Editor from '@monaco-editor/react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import webeval from './rp';
 
 const initPythonCode = `
 import os
