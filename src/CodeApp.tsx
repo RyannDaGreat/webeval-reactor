@@ -60,6 +60,7 @@ def glob_search(query: str, replacements: dict):
     """
     query = query.format(**replacements)
     paths = glob.glob(query)
+    paths = sorted(paths)
     ic(query,paths)
 
     return paths
@@ -362,13 +363,13 @@ const PathSearcher: React.FC = () => {
                 />
             </Accordion.Panel>
             <Accordion.Panel  header="Python Code" defaultExpanded>
-                    <ExevalEditor code={pythonImageCode} setCode={setPythonImageCode}/>
+                    <ExevalEditor code={pythonImageCode} setCode={setPythonImageCode} onRun={onSave}/>
             </Accordion.Panel>
         </Accordion>
     );
 }
 
-const ExevalEditor: React.FC = ({ code, setCode }) => {
+const ExevalEditor: React.FC = ({ code, setCode, onRun }) => {
     // State to store the editor content
     // const [code, setCode] = useState(code, setCode);
 
@@ -383,6 +384,9 @@ const ExevalEditor: React.FC = ({ code, setCode }) => {
     const handleRunCode = () => {
         // Using exeval_toaster function to run the code
         exeval_toaster(code, { squelch: true, sync: true });
+        if(onRun){
+            onRun();
+        }
     };
 
     return (
