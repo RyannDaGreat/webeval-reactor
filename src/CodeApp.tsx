@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import React from 'react';
-import {useState} from 'react';
+import { useState, useEffect } from 'react';
 import 'rsuite/dist/rsuite.min.css';
 import { toaster } from 'rsuite';
 import { List, Grid, Row, Col } from 'rsuite';
@@ -61,18 +61,21 @@ def glob_search(query: str, replacements: dict):
     query = query.format(**replacements)
     paths = glob.glob(query)
     paths = sorted(paths)
+
     ic(query,paths)
 
     return paths
 
+@rp.memoized
 def load_image_bytes(path):
     name = rp.get_file_name(path)
-    image = rp.load_image(path)
-    image = rp.rotate_image(image, 45)
+    image = rp.load_image(path, use_cache=True)
+    # image = rp.rotate_image(image, 45)
     image = rp.resize_image_to_fit(image, 256, 256)
     image = rp.labeled_image(image, name)
     image_bytes = rp.encode_image_to_bytes(image)
     return image_bytes
+
 `;
 exeval_toaster(initPythonCode, { sync: true });
 
@@ -123,7 +126,7 @@ interface TagTextInputProps {
 const TagTextInput: React.FC<TagTextInputProps> = ({ value, tags = [], onChange, onSave }) => {
     return (
         //Disabled the highlighting because it only worked when clicking the checkbox - not the enter key
-        <InlineEdit defaultValue={value} style={{ width: '100%' }} onChange={onChange} onSave={onSave}/>
+        <InlineEdit defaultValue={value} style={{ width: '100%' }} onChange={onChange} onSave={onSave} />
     )
     return (
         <InlineEdit defaultValue={value} style={{ width: '100%' }}>
@@ -266,7 +269,7 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange, onSave }) => {
                             max={max}
                             tags={tags}
                             onChange={(newValue) => onChange(name, newValue)}
-                            onSave = {onSave}
+                            onSave={onSave}
                         />
                     </div>
                 );
@@ -277,7 +280,8 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange, onSave }) => {
 
 const PathSearcher: React.FC = () => {
     //TODO: Bubble up state
-    const pathQueryInit = "/Users/ryan/*{x}*"
+    let pathQueryInit = "/Users/ryan/*{x}*"
+    pathQueryInit = "/Users/ryan/Downloads/Unk*"
     const pathQueryName = "PathQuery"
     const pathVarsInit = { x: 0 }
     const pathVarsName = "PathVars"
@@ -302,7 +306,7 @@ const PathSearcher: React.FC = () => {
             description: 'Set numerical values for the path replacements',
         },
     });
-    const [pythonImageCode, setPythonImageCode]  = React.useState(initPythonCode)
+    const [pythonImageCode, setPythonImageCode] = React.useState(initPythonCode)
     const [paths, setPaths] = React.useState([]) //list of strings
     const [saved, setSaved] = React.useState(false);
 
@@ -322,7 +326,7 @@ const PathSearcher: React.FC = () => {
     }
 
     const handleChange = (name: string, value: number | string | Record<string, number>) => {
-        console.log('IU',name,value)
+        console.log('IU', name, value)
         setState((prevState) => {
             const newState = { ...prevState, [name]: { ...prevState[name], value } };
 
@@ -340,17 +344,17 @@ const PathSearcher: React.FC = () => {
             setSaved(true);
         }
     }, [saved]);
-    
-    const onSave=()=>{
+
+    const onSave = () => {
         setSaved(false);
     }
 
     return (
         <Accordion>
             <Accordion.Panel header="Search Options" defaultExpanded>
-                <Controls state={state} onChange={handleChange} onSave={onSave}/>
+                <Controls state={state} onChange={handleChange} onSave={onSave} />
             </Accordion.Panel>
-            <Accordion.Panel header={"Searched Paths ["+paths.length+"]"} defaultExpanded>
+            <Accordion.Panel header={"Searched Paths [" + paths.length + "]"} defaultExpanded>
                 <Editor
                     height="400px"
                     defaultLanguage="json"
@@ -362,8 +366,11 @@ const PathSearcher: React.FC = () => {
                     }}
                 />
             </Accordion.Panel>
-            <Accordion.Panel  header="Python Code" defaultExpanded>
-                    <ExevalEditor code={pythonImageCode} setCode={setPythonImageCode} onRun={onSave}/>
+            <Accordion.Panel header="Python Code" defaultExpanded>
+                <ExevalEditor code={pythonImageCode} setCode={setPythonImageCode} onRun={onSave} />
+            </Accordion.Panel>
+            <Accordion.Panel header="Images" >
+                <ImagesGrid paths={paths} />
             </Accordion.Panel>
         </Accordion>
     );
@@ -384,7 +391,7 @@ const ExevalEditor: React.FC = ({ code, setCode, onRun }) => {
     const handleRunCode = () => {
         // Using exeval_toaster function to run the code
         exeval_toaster(code, { squelch: true, sync: true });
-        if(onRun){
+        if (onRun) {
             onRun();
         }
     };
@@ -412,6 +419,114 @@ const ExevalEditor: React.FC = ({ code, setCode, onRun }) => {
 };
 
 
+
+// function Image({ path, ...imgProps }: { path: string;[key: string]: any }) {
+//     const url = webeval.buildQueryUrl(
+//         '/webeval/web/bytes/webeval_image.png',
+//         {
+//             code: `load_image_bytes(${JSON.stringify(path)})`,
+//             content_type: 'image/png',
+//             sync: false,
+//         }
+//     );
+
+//     return <img src={url} {...imgProps} />;
+// }
+
+function Image({ path, cacheKey, ...imgProps }: { path: string; [key: string]: any }) {
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+    const url = webeval.buildQueryUrl('/webeval/web/bytes/webeval_image.png', {
+        code: `load_image_bytes(${JSON.stringify(path)})`,
+        content_type: 'image/png',
+        cache_key: cacheKey, // Add the cache-busting parameter
+      });
+  
+    const filename = path.split('/').pop();
+  
+    useEffect(() => {
+      setIsLoading(true);
+      setHasError(false);
+    }, [url]);
+  
+    const handleImageLoad = () => {
+      setIsLoading(false);
+    };
+  
+    const handleImageError = () => {
+      setIsLoading(false);
+      setHasError(true);
+    };
+  
+    return (
+      <div style={{ textAlign: 'center', position: 'relative' }}>
+        {isLoading && (
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1 }}>
+            Loading...
+          </div>
+        )}
+        {hasError && (
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1 }}>
+            Error
+          </div>
+        )}
+          <div style={{ fontSize: '5pt', opacity: 0.5, marginTop: '2px' }}>{filename}</div>
+        <img
+          src={url}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          style={{
+            filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
+            transition: 'filter 0.3s',
+          }}
+          {...imgProps}
+        />
+      </div>
+    );
+  }
+  
+
+  function ImagesGrid({ paths, imgProps = {} }) {
+    const [cacheKey, setCacheKey] = useState(0);
+    const [numColumns, setNumColumns] = useState(10);
+  
+    const handleInvalidateCache = () => {
+      setCacheKey(prevKey => prevKey + 1);
+    };
+  
+    const handleNumColumnsChange = value => {
+      setNumColumns(value);
+    };
+  
+    const columnWidth = `${100 / numColumns}%`;
+  
+    return (
+      <>
+        <ButtonToolbar>
+          <IconButton icon={<ReadyRoundIcon />} onClick={handleInvalidateCache}>
+            Invalidate Image Cache
+          </IconButton>
+          <InputNumber
+            prefix="Columns:"
+            defaultValue={10}
+            min={1}
+            step={1}
+            onChange={handleNumColumnsChange}
+            style={{width:"200px"}}
+          />
+        </ButtonToolbar>
+        <Grid fluid>
+          <Row>
+            {paths.map((path, index) => (
+              <Col key={index} style={{ width: columnWidth }}>
+                <Image path={path} cacheKey={cacheKey} style={{ width: '100%', height: 'auto' }} {...imgProps} />
+              </Col>
+            ))}
+          </Row>
+        </Grid>
+      </>
+    );
+  }
 const App: React.FC = () => {
     const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
         A: { type: 'integer', min: -999, max: 999, description: 'The first one', value: 123 },
