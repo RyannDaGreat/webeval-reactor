@@ -46,7 +46,7 @@ function Image({ path, ...imgProps }: { path: string;[key: string]: any }) {
       code: `load_image_bytes(${JSON.stringify(path)})`,
       content_type: 'image/png',
     }
-  );
+  ); 
 
   return <img src={url} {...imgProps} loading="lazy" />;
 }
@@ -106,7 +106,7 @@ function App() {
     return extension;
   };
   const goToInputPath = () => {
-    let output = prompt("Enter the new Path");
+    let output = prompt("Enter the new Path",currentPath);
     if (output === null || output === undefined) {
       // Exit without doing anything
       return;
