@@ -176,7 +176,7 @@ const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChang
     };
 
     const handleIntegerChange = (tag: string, value: number) => {
-        onChange({ ...values, [tag]: value });
+        onChange({ ...values, [tag]: Number(value) });
     };
 
     return (
