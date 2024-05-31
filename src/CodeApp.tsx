@@ -2,14 +2,20 @@
 import React from 'react';
 import { InlineEdit, Highlight, Input } from 'rsuite';
 
-const App = () => (
-  <InlineEdit defaultValue="React Suite is a set of react components that have high quality and high performance." style={{width:"100%"}}>
+interface TagTextInputProps {
+  tags: string[];
+  value: string;
+  onChangeValue: (newValue: string) => void;
+}
+
+const TagTextInput: React.FC<TagTextInputProps> = ({ tags, value, onChangeValue }) => (
+  <InlineEdit defaultValue={value} style={{ width: '100%' }}>
     {(props, ref) => {
       const { value, onChange, plaintext, ...rest } = props;
 
       if (plaintext) {
         return (
-          <Highlight query={['h', 'high performance']}>
+          <Highlight query={tags}>
             {value}
           </Highlight>
         );
@@ -22,10 +28,31 @@ const App = () => (
           ref={ref}
           value={value}
           onChange={onChange}
+          onBlur={(event) => {
+            onChangeValue(event.target.value);
+          }}
         />
       );
     }}
   </InlineEdit>
 );
 
-export default App;
+
+const App = () => {
+    const tags = ['h', 'high performance'];
+    const initialValue = 'React Suite is a set of react components that have high quality and high performance.';
+  
+    const handleChangeValue = (newValue) => {
+      console.log('New value:', newValue);
+    };
+  
+    return (
+      <TagTextInput
+        tags={tags}
+        value={initialValue}
+        onChangeValue={handleChangeValue}
+      />
+    );
+  };
+  
+  export default App;
