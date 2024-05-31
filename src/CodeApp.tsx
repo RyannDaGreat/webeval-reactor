@@ -5,10 +5,12 @@ import { useState, useEffect } from 'react';
 import 'rsuite/dist/rsuite.min.css';
 import { toaster } from 'rsuite';
 import { List, Grid, Row, Col } from 'rsuite';
+import { Button } from 'rsuite';
 import { Accordion } from 'rsuite';
 
 import ReadyRoundIcon from '@rsuite/icons/ReadyRound';
 import { IconButton, ButtonToolbar } from 'rsuite';
+import { Toggle } from 'rsuite';
 
 import { InputNumber, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
 
@@ -433,100 +435,179 @@ const ExevalEditor: React.FC = ({ code, setCode, onRun }) => {
 //     return <img src={url} {...imgProps} />;
 // }
 
-function Image({ path, cacheKey, ...imgProps }: { path: string; [key: string]: any }) {
+function Image({ path, cacheKey, isSelected, onSelect, ...imgProps }) {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
     const url = webeval.buildQueryUrl('/webeval/web/bytes/webeval_image.png', {
         code: `load_image_bytes(${JSON.stringify(path)})`,
         content_type: 'image/png',
-        cache_key: cacheKey, // Add the cache-busting parameter
-      });
-  
+        cache_key: cacheKey,
+    });
+
     const filename = path.split('/').pop();
-  
+
     useEffect(() => {
-      setIsLoading(true);
-      setHasError(false);
+        setIsLoading(true);
+        setHasError(false);
     }, [url]);
-  
+
     const handleImageLoad = () => {
-      setIsLoading(false);
+        setIsLoading(false);
     };
-  
+
     const handleImageError = () => {
-      setIsLoading(false);
-      setHasError(true);
+        setIsLoading(false);
+        setHasError(true);
     };
-  
+
+    const handleClick = (event) => {
+        if (event.button === 0) {
+            event.preventDefault();
+            onSelect(path);
+        }
+    };
+
     return (
-      <div style={{ textAlign: 'center', position: 'relative' }}>
-        {isLoading && (
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1 }}>
-            Loading...
-          </div>
-        )}
-        {hasError && (
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1 }}>
-            Error
-          </div>
-        )}
-          <div style={{ fontSize: '5pt', opacity: 0.5, marginTop: '2px' }}>{filename}</div>
-        <img
-          src={url}
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-          style={{
+        <div style={{
+            textAlign: 'center',
+            position: 'relative',
             filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
             transition: 'filter 0.3s',
-          }}
-          {...imgProps}
-        />
-      </div>
-    );
-  }
-  
+            border: isSelected ? '2px dashed yellow' : 'none',
+            boxShadow: isSelected ? '0 0 5px black' : 'none',
 
-  function ImagesGrid({ paths, imgProps = {} }) {
+        }} onMouseDown={handleClick}>
+
+            {isLoading && (
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1 }}>
+                    Loading...
+                </div>
+            )}
+            {hasError && (
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1 }}>
+                    Error
+                </div>
+            )}
+            <div style={{ fontSize: '5pt', opacity: 0.5, marginTop: '2px' }}>{filename}</div>
+            <img
+                src={url}
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+
+                {...imgProps}
+            />
+        </div>
+    );
+}
+
+function ImagesGrid({ paths, imgProps = {} }) {
     const [cacheKey, setCacheKey] = useState(0);
     const [numColumns, setNumColumns] = useState(10);
-  
+    const [selectedPaths, setSelectedPaths] = useState([]);
+    const [showSelected, setShowSelected] = useState(true);
+    const [showDeselected, setShowDeselected] = useState(true);
+
     const handleInvalidateCache = () => {
-      setCacheKey(prevKey => prevKey + 1);
+        setCacheKey((prevKey) => prevKey + 1);
     };
-  
-    const handleNumColumnsChange = value => {
-      setNumColumns(value);
+
+    const handleNumColumnsChange = (value) => {
+        setNumColumns(value);
     };
-  
+
+    const handleSelectPath = (path) => {
+        setSelectedPaths((prevPaths) => {
+            if (prevPaths.includes(path)) {
+                return prevPaths.filter((p) => p !== path);
+            } else {
+                return [...prevPaths, path];
+            }
+        });
+    };
+
+    const handleLoadSelectedPaths = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+        input.onchange = (event) => {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const loadedPaths = JSON.parse(e.target.result);
+                setSelectedPaths(loadedPaths);
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    };
+
+    const handleSaveSelectedPaths = () => {
+        const blob = new Blob([JSON.stringify(selectedPaths)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'selected_paths.json';
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
     const columnWidth = `${100 / numColumns}%`;
-  
+
+    const filteredPaths = paths.filter((path) => {
+        const isSelected = selectedPaths.includes(path);
+        return (isSelected && showSelected) || (!isSelected && showDeselected);
+    });
+
     return (
-      <>
-        <ButtonToolbar>
-          <IconButton icon={<ReadyRoundIcon />} onClick={handleInvalidateCache}>
-            Invalidate Image Cache
-          </IconButton>
-          <InputNumber
-            prefix="Columns:"
-            defaultValue={10}
-            min={1}
-            step={1}
-            onChange={handleNumColumnsChange}
-            style={{width:"200px"}}
-          />
-        </ButtonToolbar>
-        <Grid fluid>
-          <Row>
-            {paths.map((path, index) => (
-              <Col key={index} style={{ width: columnWidth }}>
-                <Image path={path} cacheKey={cacheKey} style={{ width: '100%', height: 'auto' }} {...imgProps} />
-              </Col>
-            ))}
-          </Row>
-        </Grid>
-      </>
+        <>
+            <ButtonToolbar>
+                <IconButton icon={<ReadyRoundIcon />} onClick={handleInvalidateCache}>
+                    Invalidate Image Cache
+                </IconButton>
+                <InputNumber
+                    prefix="Columns:"
+                    defaultValue={10}
+                    min={1}
+                    step={1}
+                    onChange={handleNumColumnsChange}
+                    style={{ width: '200px' }}
+                />
+                <Button onClick={handleLoadSelectedPaths}>Load Selected Paths</Button>
+                <Button onClick={handleSaveSelectedPaths}>Save Selected Paths</Button>
+                <Toggle
+                    checked={showSelected}
+                    onChange={setShowSelected}
+                    checkedChildren="See Selected"
+                    unCheckedChildren="Hide Selected"
+                />
+                <Toggle
+                    checked={showDeselected}
+                    onChange={setShowDeselected}
+                    checkedChildren="See Deselected"
+                    unCheckedChildren="Hide Deselected"
+                />
+            </ButtonToolbar>
+            <Grid fluid>
+                <Row>
+                    {filteredPaths.map((path, index) => (
+                        <Col key={index} style={{ width: columnWidth }}>
+                            <Image
+                                path={path}
+                                cacheKey={cacheKey}
+                                isSelected={selectedPaths.includes(path)}
+                                onSelect={handleSelectPath}
+                                style={{ width: '90%', height: 'auto' }}
+                                {...imgProps}
+                            />
+                        </Col>
+                    ))}
+                </Row>
+            </Grid>
+        </>
     );
-  }
+}
+
+
 const App: React.FC = () => {
     const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
         A: { type: 'integer', min: -999, max: 999, description: 'The first one', value: 123 },
