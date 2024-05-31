@@ -8,6 +8,27 @@ import { List, Grid, Row, Col } from 'rsuite';
 import { InputNumber, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
 
 import webeval from './rp';
+
+
+const  webeval_toaster= async(code, vars = {}, sync = false) =>{
+    try {
+
+        const result = await webeval.exeval(code, vars, sync);
+        return result;
+    } catch (e) {
+        toaster.push(
+            <Notification type="error" header="Python Error" closable >
+                {`An error occurred: ${e.message}`}
+            </Notification>,
+            { placement: 'topEnd' , duration:10000}
+        );
+        console.error(e);
+        // throw e;
+    }
+}
+
+
+
 const initPythonCode = `
 import os
 import base64
@@ -22,19 +43,24 @@ def glob_search(query: str, replacements: dict):
     Returns a list of globbed paths
     """
     query = query.format(**replacements)
-    return glob.glob(query)
+    paths = glob.glob(query)
+    print(rp.line_join(paths))
+    print(query)
 
-
+    return paths
 `;
 
+webeval_toaster(initPythonCode);
 
-webeval.exeval(initPythonCode, {}, true);
+
 interface IntegerControlProps {
     value: number;
     min?: number;
     max?: number;
     onChange: (value: number) => void;
 }
+
+
 
 const IntegerControl: React.FC<IntegerControlProps> = ({ value, min = -Infinity, max = Infinity, onChange }) => {
     const handleChange = (value: string | number | null) => {
@@ -234,17 +260,27 @@ const PathSearcher: React.FC = () => {
         },
     });
 
+    const updatePaths = () => {
+        webeval.exeval(
+            "glob_search(query,replacements)",
+            { 
+                query: state[pathQueryName].value, 
+                replacements: state[pathVarsName].value,
+            }
+        )
+    }
 
     const handleChange = (name: string, value: number | string | Record<string, number>) => {
         setState((prevState) => {
             const newState = { ...prevState, [name]: { ...prevState[name], value } };
 
             if (name === pathVarsName) {
-                newState[pathVarsName].tags = Object.keys(value as Record<string, number>);
+                newState[pathQueryName].tags = Object.keys(value as Record<string, number>);
             }
 
             return newState;
         });
+        updatePaths();
     };
 
     return (
