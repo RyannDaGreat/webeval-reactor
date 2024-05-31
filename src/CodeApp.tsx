@@ -4,13 +4,14 @@ import React from 'react';
 import 'rsuite/dist/rsuite.min.css';
 import { toaster } from 'rsuite';
 import { List, Grid, Row, Col } from 'rsuite';
+import { Accordion } from 'rsuite';
 
 import { InputNumber, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
 
 import webeval from './rp';
 
 
-const  webeval_toaster= async(code, vars = {}, sync = false) =>{
+const exeval_toaster = async (code, vars = {}, sync = false) => {
     try {
 
         const result = await webeval.exeval(code, vars, sync);
@@ -20,13 +21,12 @@ const  webeval_toaster= async(code, vars = {}, sync = false) =>{
             <Notification type="error" header="Python Error" closable >
                 {`An error occurred: ${e.message}`}
             </Notification>,
-            { placement: 'topEnd' , duration:10000}
+            { placement: 'topEnd', duration: 10000 }
         );
         console.error(e);
         // throw e;
     }
 }
-
 
 
 const initPythonCode = `
@@ -50,7 +50,7 @@ def glob_search(query: str, replacements: dict):
     return paths
 `;
 
-webeval_toaster(initPythonCode);
+exeval_toaster(initPythonCode);
 
 
 interface IntegerControlProps {
@@ -154,7 +154,7 @@ const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChang
             </div>
         </div>
     );
-                }
+}
 interface ControlProps {
     name: string;
     description?: string;
@@ -241,13 +241,13 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
 
 
 const PathSearcher: React.FC = () => {
-    const pathQueryInit="/Users/ryan/*{x}*"
-    const pathQueryName="PathQuery"
-    const pathVarsInit={x:0}
-    const pathVarsName="PathVars"
+    const pathQueryInit = "/Users/ryan/*{x}*"
+    const pathQueryName = "PathQuery"
+    const pathVarsInit = { x: 0 }
+    const pathVarsName = "PathVars"
 
     const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
-        [ pathQueryName]: {
+        [pathQueryName]: {
             type: 'text',
             value: pathQueryInit,
             description: 'Enter a python f-string, using PathVars as variables',
@@ -260,14 +260,18 @@ const PathSearcher: React.FC = () => {
         },
     });
 
-    const updatePaths = () => {
-        webeval.exeval(
+    const [paths, setPaths] = React.useState([]) //list of strings
+
+
+    const updatePaths = async () => {
+        const paths = await exeval_toaster(
             "glob_search(query,replacements)",
-            { 
-                query: state[pathQueryName].value, 
+            {
+                query: state[pathQueryName].value,
                 replacements: state[pathVarsName].value,
             }
         )
+        setPaths(paths)
     }
 
     const handleChange = (name: string, value: number | string | Record<string, number>) => {
@@ -286,6 +290,7 @@ const PathSearcher: React.FC = () => {
     return (
         <div style={{ padding: 20 }}>
             <Controls state={state} onChange={handleChange} />
+            
         </div>
     );
 }
@@ -321,7 +326,7 @@ const App: React.FC = () => {
 
     return (
         <div style={{ padding: 20 }}>
-            <PathSearcher/>
+            <PathSearcher />
             {/* <Controls state={state} onChange={handleChange} /> */}
         </div>
     );
