@@ -48,7 +48,7 @@ function Image({ path, ...imgProps }: { path: string;[key: string]: any }) {
     }
   );
 
-  return <img src={url} {...imgProps} />;
+  return <img src={url} {...imgProps} loading="lazy" />;
 }
 
 

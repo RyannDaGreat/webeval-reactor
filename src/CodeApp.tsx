@@ -60,14 +60,9 @@ def glob_search(query: str, replacements: dict):
     Replacements is like {"x":5,"y":100}
     Returns a list of globbed paths
     """
-    ic(query, replacements)
-    replacements = {x:int(y) for x,y in replacements.items()}
     query = query.format(**replacements)
     paths = glob.glob(query)
     paths = sorted(paths)
-
-    ic(query,paths)
-
     return paths
 
 @rp.memoized
@@ -516,7 +511,7 @@ function Image({ path, cacheKey, isSelected, onSelect, ...imgProps }) {
                 src={url}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
-
+                loading="lazy"
                 {...imgProps}
             /></div>
         </div>
@@ -589,7 +584,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
                 </IconButton>
                 <InputNumber
                     prefix="Columns:"
-                    defaultValue={10}
+                    defaultValue={18}
                     min={1}
                     step={1}
                     onChange={handleNumColumnsChange}
