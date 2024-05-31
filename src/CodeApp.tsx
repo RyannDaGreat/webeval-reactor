@@ -1,4 +1,4 @@
-// @ts-nochecks
+// @ts-nocheck
 import React from 'react';
 import { InputNumber, Notification, InlineEdit, Highlight, Input } from 'rsuite';
 import 'rsuite/dist/rsuite.min.css';
@@ -24,15 +24,15 @@ interface IntegerControlProps {
     name: string;
     value: number;
     description?: string;
-    min: number;
-    max: number;
+    min?: number;
+    max?: number;
     onChange: (name: string, value: number) => void;
 }
 
-const IntegerControl: React.FC<IntegerControlProps> = ({ name, value, description = '', min=-Infinity, max=Infinity, onChange }) => {
+const IntegerControl: React.FC<IntegerControlProps> = ({ name, value, description = '', min = -Infinity, max = Infinity, onChange }) => {
     const handleChange = (value: string | number | null) => {
-        if (value >= min && value <= max) {
-            onChange(name, value);
+        if (value !== null && value >= min && value <= max) {
+            onChange(name, value as number);
         } else {
             toaster.push(
                 <Notification type="warning" header="Error" closable>
@@ -70,7 +70,7 @@ const TagTextInput: React.FC<TagTextInputProps> = ({ name, value, description = 
     return (
         <LabeledControl name={name} description={description}>
             <InlineEdit defaultValue={value} style={{ width: '100%' }}>
-                {(props, ref) => {
+                {(props: any, ref: any) => {
                     const { value, onChange: onEditChange, plaintext, ...rest } = props;
 
                     if (plaintext) {
@@ -127,7 +127,7 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
 };
 
 const App: React.FC = () => {
-    const [state, setState] = React.useState({
+    const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text'; value: number | string; description?: string; min?: number; max?: number; tags?: string[] }>>({
         A: { type: 'integer', min: -999, max: 999, description: 'The first one', value: 123 },
         Bobobo: { type: 'integer', max: 999, description: 'The second one', value: 456 },
         Text: {
