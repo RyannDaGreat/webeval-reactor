@@ -46,8 +46,7 @@ const exeval_toaster = async (
     }
 };
 
-const initPythonCode = `
-import rp
+const initPythonCode = `import rp
 import glob
 from icecream import ic
 
@@ -63,12 +62,6 @@ def glob_search(query: str, replacements: dict):
     ic(query,paths)
 
     return paths
-`;
-exeval_toaster(initPythonCode, { sync: true });
-
-
-const initPythonImageCode = `
-import rp
 
 def load_image_bytes(path):
     name = rp.get_file_name(path)
@@ -79,7 +72,7 @@ def load_image_bytes(path):
     image_bytes = rp.encode_image_to_bytes(image)
     return image_bytes
 `;
-exeval_toaster(initPythonImageCode, { sync: true });
+exeval_toaster(initPythonCode, { sync: true });
 
 
 interface IntegerControlProps {
@@ -288,7 +281,7 @@ const PathSearcher: React.FC = () => {
             description: 'Set numerical values for the path replacements',
         },
     });
-    const [pythonImageCode, setPythonImageCode]  = React.useState(initPythonImageCode)
+    const [pythonImageCode, setPythonImageCode]  = React.useState(initPythonCode)
     const [paths, setPaths] = React.useState([]) //list of strings
 
 
@@ -299,10 +292,11 @@ const PathSearcher: React.FC = () => {
                 vars: {
                     query: state[pathQueryName].value,
                     replacements: state[pathVarsName].value,
-                }
+                },
+                squelch: true,
             }
         )
-        setPaths(paths)
+        setPaths(paths || [])
     }
 
     const handleChange = (name: string, value: number | string | Record<string, number>) => {
@@ -315,15 +309,19 @@ const PathSearcher: React.FC = () => {
 
             return newState;
         });
-        updatePaths();
     };
+
+    React.useEffect(() => {
+        updatePaths();
+    }, [state[pathQueryName], state[pathVarsName]]);
+    
 
     return (
         <Accordion>
             <Accordion.Panel header="Search Options" defaultExpanded>
                 <Controls state={state} onChange={handleChange} />
             </Accordion.Panel>
-            <Accordion.Panel header="Searched Paths" defaultExpanded>
+            <Accordion.Panel header={"Searched Paths ["+paths.length+"]"} defaultExpanded>
                 <Editor
                     height="400px"
                     defaultLanguage="json"
