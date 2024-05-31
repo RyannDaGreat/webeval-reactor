@@ -4,6 +4,8 @@ import { FolderFill, ArrowUpLine } from '@rsuite/icons';
 import Editor from '@monaco-editor/react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import webeval from './rp';
+import { InputNumber, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
+
 
 const initPythonCode = `
 import os
@@ -12,6 +14,8 @@ import rp
 
 
 def json_scandir(root):
+    if not rp.folder_exists(root):
+        return []
     output = [
         {"name": entry.name, "isDirectory": entry.is_dir()}
         for entry in sorted(
@@ -21,14 +25,15 @@ def json_scandir(root):
     ]
     return output
 
-def load_image_bytes(path):
-    name = rp.get_file_name(path)
-    image = rp.load_image(path)
-    image = rp.rotate_image(image, 45)
-    image = rp.resize_image_to_fit(image, 256, 256)
-    image = rp.labeled_image(image, name)
-    image_bytes = rp.encode_image_to_bytes(image)
-    return image_bytes
+if 'load_image_bytes' not in dir():
+    def load_image_bytes(path):
+        name = rp.get_file_name(path)
+        image = rp.load_image(path)
+        # image = rp.rotate_image(image, 45)
+        image = rp.resize_image_to_fit(image, 256, 256)
+        image = rp.labeled_image(image, name)
+        image_bytes = rp.encode_image_to_bytes(image)
+        return image_bytes
 
 `;
 webeval.exeval(initPythonCode, {}, true);
@@ -100,6 +105,15 @@ function App() {
     const extension = fileName.split('.').pop()?.toLowerCase() || '';
     return extension;
   };
+  const goToInputPath = () => {
+    let output = prompt("Enter the new Path");
+    if (output === null || output === undefined) {
+      // Exit without doing anything
+      return;
+    }
+    setCurrentPath(output);
+  };
+  
 
   const isImageFile = (fileName: string) => {
     const imageExtensions = [
@@ -110,19 +124,24 @@ function App() {
     return imageExtensions.includes(extension);
   };
 
+
   return (<CustomProvider theme="dark">
     <Container className="app-container">
-      <Header>
+      {/* <Header>
         <h2 className="app-header">File Browserator</h2>
-      </Header>
+      </Header> */}
       <Content>
         <PanelGroup direction="horizontal" autoSaveId="persistence">
           <Panel>
-            <div className="current-path">
-              <strong>Current Path:</strong>
-              <br />
-              <span className="path-text">{currentPath}</span>
-            </div>
+          <div 
+      className="current-path" 
+      onClick={goToInputPath} 
+      style={{ cursor: 'pointer' }}
+    >
+      <strong>Current Path:</strong>
+      <br />
+      <span className="path-text">{currentPath}</span>
+    </div>
             <ButtonGroup vertical block>
               <Button onClick={handleGoUp}>
                 <ArrowUpLine /> ..

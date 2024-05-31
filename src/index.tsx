@@ -13,10 +13,10 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <Tabs defaultActiveKey="1">
-      <Tabs.Tab eventKey="1" title="Coder">
+      <Tabs.Tab eventKey="1" title="OLAT Explorer">
         <AppCode />
       </Tabs.Tab>
-      <Tabs.Tab eventKey="2" title="Browser">
+      <Tabs.Tab eventKey="2" title="File Browser">
         <AppBrowser />
       </Tabs.Tab>
     </Tabs>

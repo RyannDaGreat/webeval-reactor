@@ -60,6 +60,8 @@ def glob_search(query: str, replacements: dict):
     Replacements is like {"x":5,"y":100}
     Returns a list of globbed paths
     """
+    ic(query, replacements)
+    replacements = {x:int(y) for x,y in replacements.items()}
     query = query.format(**replacements)
     paths = glob.glob(query)
     paths = sorted(paths)
@@ -73,10 +75,21 @@ def load_image_bytes(path):
     name = rp.get_file_name(path)
     image = rp.load_image(path, use_cache=True)
     # image = rp.rotate_image(image, 45)
-    image = rp.resize_image_to_fit(image, 256, 256)
-    image = rp.labeled_image(image, name)
-    image_bytes = rp.encode_image_to_bytes(image)
+    image = rp.resize_image_to_fit(image, 512, 512)
+    title = '\\n'.join(path.split('/')[-3:])
+    image = rp.labeled_image(image, title, size=60)
+    image_bytes = rp.encode_image_to_bytes(image, 'jpg', quality=95)
     return image_bytes
+
+
+"""
+    Some notes: 
+        /efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_{cam:04}_distorted.png
+        Vars: cam, frame, pose
+
+        /efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_mary_2023112106/precache/diffuse/*{pose:04}*norm*png
+
+"""
 
 `;
 exeval_toaster(initPythonCode, { sync: true });
@@ -282,10 +295,17 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange, onSave }) => {
 
 const PathSearcher: React.FC = () => {
     //TODO: Bubble up state
-    let pathQueryInit = "/Users/ryan/*{x}*"
-    pathQueryInit = "/Users/ryan/Downloads/Unk*"
+    // let pathQueryInit = "/Users/ryan/*{x}*"
+    // pathQueryInit = "/Users/ryan/Downloads/Unk*"
+    // const pathVarsInit = { x: 0 }
+
+
+    let pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_{cam:04}_distorted.png"
+    pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_*_distorted.png"
+    const pathVarsInit = { pose: 10, cam:10, frame:10 }
+    
+
     const pathQueryName = "PathQuery"
-    const pathVarsInit = { x: 0 }
     const pathVarsName = "PathVars"
 
     const [state, setState] = React.useState<Record<string, {
