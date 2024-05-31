@@ -165,7 +165,7 @@ interface IntegerTagControlsProps {
     onChange: (values: Record<string, number>) => void;
 }
 
-const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChange, onSave }) => {
+const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChange, onSave, min=0, max }) => {
     const handleTagChange = (tags: string[]) => {
         const newValues: Record<string, number> = {};
         tags.forEach((tag) => {
@@ -194,7 +194,8 @@ const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChang
                             name={tag}
                             type="integer"
                             value={value}
-                            min={0}
+                            min={min}
+                            max={max}
                             onChange={(newValue) => handleIntegerChange(tag, newValue as number)}
                             onSave={onSave}
                         />
@@ -242,6 +243,8 @@ const Control: React.FC<ControlProps> = ({ name, description, type, value, min, 
                 values={value as Record<string, number>}
                 onChange={onChange as (values: Record<string, number>) => void}
                 onSave={onSave}
+                min={min}
+                max={max}
 
             />
         );
