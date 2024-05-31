@@ -1,8 +1,9 @@
 // @ts-nocheck
+
 import React from 'react';
 import 'rsuite/dist/rsuite.min.css';
 import { toaster } from 'rsuite';
-import { List } from 'rsuite';
+import { List, Grid, Row, Col } from 'rsuite';
 
 import { InputNumber, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
 
@@ -105,7 +106,6 @@ const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChang
         </div>
     );
 };
-
 interface ControlProps {
     name: string;
     description?: string;
@@ -145,11 +145,19 @@ const Control: React.FC<ControlProps> = ({ name, description, type, value, min, 
         );
     }
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '50% 1fr 2fr', alignItems: 'center', marginBottom: 10, gap: '12px' }}>
-            <span style={{ fontWeight: 'bold', color: 'white', textAlign: 'right' }}>{name}</span>
-            {output}
-            <span style={{ fontStyle: 'italic', color: '#999' }}>{description}</span>
-        </div>
+        <Grid fluid>
+            <Row gutter={12} align="middle">
+                <Col xs={24} sm={6} md={4} lg={3}>
+                    <div style={{ fontWeight: 'bold', color: 'white', textAlign: 'right' }}>{name}</div>
+                </Col>
+                <Col xs={24} sm={12} md={14} lg={15}>
+                    {output}
+                </Col>
+                <Col xs={24} sm={6} md={6} lg={6}>
+                    <div style={{ fontStyle: 'italic', color: '#999' }}>{description}</div>
+                </Col>
+            </Row>
+        </Grid>
     );
 };
 
