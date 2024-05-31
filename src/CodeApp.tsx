@@ -1,6 +1,7 @@
 // @ts-nocheck
 
 import React from 'react';
+import {useState} from 'react';
 import 'rsuite/dist/rsuite.min.css';
 import { toaster } from 'rsuite';
 import { List, Grid, Row, Col } from 'rsuite';
@@ -26,13 +27,15 @@ const exeval_toaster = async (
     }
 ) => {
     try {
-
         const result = await webeval.exeval(code, vars, sync);
         return result;
     } catch (e) {
         toaster.push(
-            <Notification type="error" header="Python Error" closable >
-                {`An error occurred: ${e.message}`}
+            <Notification type="error" header="Python Error" closable>
+                {`An error occurred:`}
+                <pre style={{ fontFamily: 'monospace' }}>
+                    {e.message}
+                </pre>
             </Notification>,
             { placement: 'topEnd', duration: 10000 }
         );
@@ -41,8 +44,7 @@ const exeval_toaster = async (
             throw e;
         }
     }
-}
-
+};
 
 const initPythonCode = `
 import rp
@@ -245,12 +247,10 @@ interface ControlsProps {
 const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
     return (
         <div>
-            {/* // <List> */}
             {Object.entries(state).map(([name, controlState]) => {
                 const { type, value, description, min, max, tags } = controlState;
                 return (
-                    // <List.Item key={name}>
-                    <div key={name}>
+                    <div key={name} style={{ marginBottom: '16px' }}>
                         <Control
                             name={name}
                             description={description}
@@ -262,14 +262,11 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
                             onChange={(newValue) => onChange(name, newValue)}
                         />
                     </div>
-                    // </List.Item>
                 );
             })}
-            {/* // </List> */}
         </div>
     );
 };
-
 
 const PathSearcher: React.FC = () => {
     //TODO: Bubble up state
@@ -291,7 +288,7 @@ const PathSearcher: React.FC = () => {
             description: 'Set numerical values for the path replacements',
         },
     });
-
+    const [pythonImageCode, setPythonImageCode]  = React.useState(initPythonImageCode)
     const [paths, setPaths] = React.useState([]) //list of strings
 
 
@@ -338,17 +335,52 @@ const PathSearcher: React.FC = () => {
                     }}
                 />
             </Accordion.Panel>
+            <Accordion.Panel  header="Python Code" defaultExpanded>
+                    <ExevalEditor code={pythonImageCode} setCode={setPythonImageCode}/>
+            </Accordion.Panel>
         </Accordion>
     );
 }
 
-const ExevalEditor: React.FC = () => {
+const ExevalEditor: React.FC = ({ code, setCode }) => {
+    // State to store the editor content
+    // const [code, setCode] = useState(code, setCode);
+
+    // Handle changes in the editor
+    const handleEditorChange = (value: string | undefined, event: any) => {
+        if (value !== undefined) {
+            setCode(value);
+        }
+    };
+
+    // Function to handle code execution
+    const handleRunCode = () => {
+        // Using exeval_toaster function to run the code
+        exeval_toaster(code, { squelch: true, sync: true });
+    };
+
     return (
-        <ButtonToolbar>
-            <IconButton icon={<ReadyRoundIcon />}>Search</IconButton>
-        </ButtonToolbar>
-    )
-}
+        <>
+            <Editor
+                height="400px"
+                defaultLanguage="python"
+                value={code}
+                onChange={handleEditorChange}
+                theme="vs-dark"
+                options={{
+                    readOnly: false,
+                    minimap: { enabled: true },
+                }}
+            />
+            <ButtonToolbar>
+                <IconButton icon={<ReadyRoundIcon />} onClick={handleRunCode}>
+                    Run Python Code
+                </IconButton>
+            </ButtonToolbar>
+        </>
+    );
+};
+
 
 const App: React.FC = () => {
     const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
@@ -382,7 +414,6 @@ const App: React.FC = () => {
     return (
         <div style={{ padding: 20 }}>
             <PathSearcher />
-            <ExevalEditor />
             {/* <Controls state={state} onChange={handleChange} /> */}
         </div>
     );
