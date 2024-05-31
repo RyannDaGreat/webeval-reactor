@@ -62,7 +62,7 @@ def glob_search(query: str, replacements: dict):
 
     return paths
 `;
-exeval_toaster(initPythonCode,{sync:true});
+exeval_toaster(initPythonCode, { sync: true });
 
 
 const initPythonImageCode = `
@@ -77,7 +77,7 @@ def load_image_bytes(path):
     image_bytes = rp.encode_image_to_bytes(image)
     return image_bytes
 `;
-exeval_toaster(initPythonImageCode,{sync:true});
+exeval_toaster(initPythonImageCode, { sync: true });
 
 
 interface IntegerControlProps {
@@ -245,7 +245,7 @@ interface ControlsProps {
 const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
     return (
         <div>
-        {/* // <List> */}
+            {/* // <List> */}
             {Object.entries(state).map(([name, controlState]) => {
                 const { type, value, description, min, max, tags } = controlState;
                 return (
@@ -261,11 +261,11 @@ const Controls: React.FC<ControlsProps> = ({ state, onChange }) => {
                             tags={tags}
                             onChange={(newValue) => onChange(name, newValue)}
                         />
-                        </div>
+                    </div>
                     // </List.Item>
                 );
             })}
-        {/* // </List> */}
+            {/* // </List> */}
         </div>
     );
 };
@@ -342,11 +342,11 @@ const PathSearcher: React.FC = () => {
     );
 }
 
-const ExevalEditor: React.FC =  () => {
+const ExevalEditor: React.FC = () => {
     return (
-    <ButtonToolbar>
-    <IconButton icon={<ReadyRoundIcon />}>Search</IconButton>
-  </ButtonToolbar>
+        <ButtonToolbar>
+            <IconButton icon={<ReadyRoundIcon />}>Search</IconButton>
+        </ButtonToolbar>
     )
 }
 
@@ -382,7 +382,7 @@ const App: React.FC = () => {
     return (
         <div style={{ padding: 20 }}>
             <PathSearcher />
-            <ExevalEditor/>
+            <ExevalEditor />
             {/* <Controls state={state} onChange={handleChange} /> */}
         </div>
     );
