@@ -1,0 +1,37 @@
+
+<script src="/webeval/rp.js"></script>
+
+<h1>Interactive Webeval Demo</h1>
+
+<label for="codeInput">Enter code:</label><br>
+<textarea id="codeInput" rows="5" cols="50"></textarea><br>
+
+<label for="varsInput">Enter variables (JSON):</label><br>
+<textarea id="varsInput" rows="3" cols="50">{}</textarea><br>
+
+<div>
+  <input type="checkbox" id="syncCheckbox">
+  <label for="syncCheckbox">Sync</label>
+</div>
+
+<button id="evaluateButton">Evaluate</button>
+
+<h2>Result:</h2>
+<textarea id="resultOutput" rows="10" cols="50" readonly></textarea>
+
+<script>
+  document.getElementById('evaluateButton').addEventListener('click', async function() {
+    const code = document.getElementById('codeInput').value;
+    const varsString = document.getElementById('varsInput').value;
+    const sync = document.getElementById('syncCheckbox').checked;
+    
+    try {
+      const vars = JSON.parse(varsString);
+      const result = await rp.webeval.evaluate(code, vars, sync);
+      document.getElementById('resultOutput').value = JSON.stringify(result, null, 2);
+    } catch (error) {
+      console.error('Evaluation error:', error);
+    }
+  });
+</script>
+
