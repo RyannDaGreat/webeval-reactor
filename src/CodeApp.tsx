@@ -536,7 +536,7 @@ function Image({ path, cacheKey, isSelected, onSelect, index, ...imgProps }) {
 
 function ImagesGrid({ paths, imgProps = {} }) {
     const [cacheKey, setCacheKey] = useState(0);
-    const [numColumns, setNumColumns] = useState(9);
+    const [numColumns, setNumColumns] = useState(18);
     const [selectedPaths, setSelectedPaths] = useState([]);
     const [showSelected, setShowSelected] = useState(true);
     const [showDeselected, setShowDeselected] = useState(true);
