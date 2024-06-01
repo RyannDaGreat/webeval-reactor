@@ -9,6 +9,9 @@ import { Button } from 'rsuite';
 import { Accordion } from 'rsuite';
 
 import ReadyRoundIcon from '@rsuite/icons/ReadyRound';
+import SaveIcon from '@rsuite/icons/FileDownload';
+import LoadIcon from '@rsuite/icons/FileUpload';
+import ReloadIcon from '@rsuite/icons/Reload';
 import { IconButton, ButtonToolbar } from 'rsuite';
 import { Toggle } from 'rsuite';
 
@@ -579,8 +582,9 @@ function ImagesGrid({ paths, imgProps = {} }) {
     return (
         <>
             <ButtonToolbar>
-                <IconButton icon={<ReadyRoundIcon />} onClick={handleInvalidateCache}>
-                    Invalidate Image Cache
+                <IconButton icon={<ReloadIcon />} onClick={handleInvalidateCache}>
+                    Reload Images
+                    {/* Invalidate Image Cache */}
                 </IconButton>
                 <InputNumber
                     prefix="Columns:"
@@ -590,8 +594,8 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     onChange={handleNumColumnsChange}
                     style={{ width: '200px' }}
                 />
-                <Button onClick={handleLoadSelectedPaths}>Load Selected Paths</Button>
-                <Button onClick={handleSaveSelectedPaths}>Save Selected Paths</Button>
+                <IconButton icon={<LoadIcon/>} onClick={handleLoadSelectedPaths}>Load Selected Paths</IconButton>
+                <IconButton icon={<SaveIcon/>} onClick={handleSaveSelectedPaths}>Save Selected Paths</IconButton>
                 <Toggle
                     checked={showSelected}
                     onChange={setShowSelected}
