@@ -523,7 +523,7 @@ function Image({ path, cacheKey, isSelected, onSelect, ...imgProps }) {
 
 function ImagesGrid({ paths, imgProps = {} }) {
     const [cacheKey, setCacheKey] = useState(0);
-    const [numColumns, setNumColumns] = useState(10);
+    const [numColumns, setNumColumns] = useState(18);
     const [selectedPaths, setSelectedPaths] = useState([]);
     const [showSelected, setShowSelected] = useState(true);
     const [showDeselected, setShowDeselected] = useState(true);
@@ -588,7 +588,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
                 </IconButton>
                 <InputNumber
                     prefix="Columns:"
-                    defaultValue={18}
+                    defaultValue={numColumns}
                     min={1}
                     step={1}
                     onChange={handleNumColumnsChange}
