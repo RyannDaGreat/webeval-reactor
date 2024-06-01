@@ -301,7 +301,7 @@ const PathSearcher: React.FC = () => {
     let pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_{cam:04}_distorted.png"
     pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_*_distorted.png"
     pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_*/cam_{cam:04}_distorted.png"
-    const pathVarsInit = { pose: 10, cam: 10, frame: 10 }
+    const pathVarsInit = { pose: 28, cam: 35, frame: 10 }
 
 
     const pathQueryName = "PathQuery"
@@ -650,33 +650,33 @@ function ImagesGrid({ paths, imgProps = {} }) {
 
 
 const App: React.FC = () => {
-    const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
-        A: { type: 'integer', min: -999, max: 999, description: 'The first one', value: 123 },
-        Bobobo: { type: 'integer', max: 999, description: 'The second one', value: 456 },
-        Text: {
-            type: 'text',
-            value: 'React Suite is a set of react components that have high quality and high performance.',
-            description: 'Edit the text and see the highlighted tags',
-            tags: ['h', 'high performance'],
-        },
-        TagIntegers: {
-            type: 'integerTags',
-            value: { foo: 10, bar: 20 },
-            description: 'Create tags and assign integer values to them',
-        },
-    });
+    // const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
+    //     A: { type: 'integer', min: -999, max: 999, description: 'The first one', value: 123 },
+    //     Bobobo: { type: 'integer', max: 999, description: 'The second one', value: 456 },
+    //     Text: {
+    //         type: 'text',
+    //         value: 'React Suite is a set of react components that have high quality and high performance.',
+    //         description: 'Edit the text and see the highlighted tags',
+    //         tags: ['h', 'high performance'],
+    //     },
+    //     TagIntegers: {
+    //         type: 'integerTags',
+    //         value: { foo: 10, bar: 20 },
+    //         description: 'Create tags and assign integer values to them',
+    //     },
+    // });
 
-    const handleChange = (name: string, value: number | string | Record<string, number>) => {
-        setState((prevState) => {
-            const newState = { ...prevState, [name]: { ...prevState[name], value } };
+    // const handleChange = (name: string, value: number | string | Record<string, number>) => {
+    //     setState((prevState) => {
+    //         const newState = { ...prevState, [name]: { ...prevState[name], value } };
 
-            if (name === 'TagIntegers') {
-                newState.Text.tags = Object.keys(value as Record<string, number>);
-            }
+    //         if (name === 'TagIntegers') {
+    //             newState.Text.tags = Object.keys(value as Record<string, number>);
+    //         }
 
-            return newState;
-        });
-    };
+    //         return newState;
+    //     });
+    // };
 
     return (
         <div style={{ padding: 20 }}>
