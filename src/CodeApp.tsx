@@ -343,7 +343,7 @@ const PathSearcher: React.FC = () => {
                 squelch: true,
             }
         )
-        setPaths(paths || [])
+        setPaths(Array.isArray(paths) ? paths : []);
     }
 
     const handleChange = (name: string, value: number | string | Record<string, number>) => {
@@ -492,8 +492,8 @@ function Image({ path, cacheKey, isSelected, onSelect, index, ...imgProps }) {
             position: 'relative',
             border: isSelected ? '2px dashed yellow' : 'none',
             boxShadow: isSelected ? '0 0 5px black' : 'none',
-            height:"100%",
-            width:"100%",
+            height: "100%",
+            width: "100%",
 
         }} onMouseDown={handleClick}>
 
@@ -507,9 +507,9 @@ function Image({ path, cacheKey, isSelected, onSelect, index, ...imgProps }) {
                     color: 'white',
                     textShadow: '0px 0px 10px rgba(0, 0, 0, 1)',
                 }}>
-                   Loading...
-                   <br/>
-                   <Loader size="xs" content="" /> 
+                    Loading...
+                    <br />
+                    <Loader size="xs" content="" />
                 </div>
 
             )}
@@ -639,7 +639,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
                             onSelect={handleSelectPath}
                             style={{ width: '100%', height: 'auto' }}
                             {...imgProps}
-                            index = {index}
+                            index={index}
                         />
                     </div>
                 ))}
