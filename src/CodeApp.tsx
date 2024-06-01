@@ -70,7 +70,7 @@ def glob_search(query: str, replacements: dict) -> list:
 @rp.memoized
 def load_image_bytes(path: str) -> bytes:
     image = rp.load_image(path, use_cache=True)
-    image = rp.resize_image_to_fit(image, width = 512)
+    image = rp.resize_image_to_fit(image, height = 512)
     # image = rp.rotate_image(image, 45)
     title = '\\n'.join(path.split('/')[-3:])
     image = rp.labeled_image(image, title, size=60)
