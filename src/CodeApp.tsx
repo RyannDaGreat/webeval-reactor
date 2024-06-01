@@ -627,7 +627,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
                 style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${numColumns}, 1fr)`,
-                    gap: '10px',
+                    gap: '5px',
                 }}
             >
                 {filteredPaths.map((path, index) => (
