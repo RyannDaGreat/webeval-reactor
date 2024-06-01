@@ -14,6 +14,7 @@ import LoadIcon from '@rsuite/icons/FileUpload';
 import ReloadIcon from '@rsuite/icons/Reload';
 import { IconButton, ButtonToolbar } from 'rsuite';
 import { Toggle } from 'rsuite';
+import { Loader } from 'rsuite';
 
 import { InputNumber, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
 
@@ -54,10 +55,8 @@ const exeval_toaster = async (
 
 const initPythonCode = `import rp
 import glob
-from icecream import ic
 
-
-def glob_search(query: str, replacements: dict):
+def glob_search(query: str, replacements: dict) -> list:
     """
     Query is like "/path/to/{x:05}/image_*/{y}.png"
     Replacements is like {"x":5,"y":100}
@@ -69,27 +68,25 @@ def glob_search(query: str, replacements: dict):
     return paths
 
 @rp.memoized
-def load_image_bytes(path):
-    name = rp.get_file_name(path)
+def load_image_bytes(path: str) -> bytes:
     image = rp.load_image(path, use_cache=True)
+    image = rp.resize_image_to_fit(image, width = 512)
     # image = rp.rotate_image(image, 45)
-    image = rp.resize_image_to_fit(image, 512, 512)
     title = '\\n'.join(path.split('/')[-3:])
     image = rp.labeled_image(image, title, size=60)
     image_bytes = rp.encode_image_to_bytes(image, 'jpg', quality=95)
     return image_bytes
-
-
-"""
-    Some notes: 
-        /efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_{cam:04}_distorted.png
-        Vars: cam, frame, pose
-
-        /efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_mary_2023112106/precache/diffuse/*{pose:04}*norm*png
-
-"""
-
+    
+    # return rp.file_to_bytes(path) #Just loads the file raw
 `;
+
+// """
+//     Some notes: 
+//         /efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_{cam:04}_distorted.png
+//         Vars: cam, frame, pose
+//         /efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_mary_2023112106/precache/diffuse/*{pose:04}*norm*png
+// """
+
 exeval_toaster(initPythonCode, { sync: true });
 
 
@@ -163,7 +160,7 @@ interface IntegerTagControlsProps {
     onChange: (values: Record<string, number>) => void;
 }
 
-const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChange, onSave, min=0, max }) => {
+const IntegerTagControls: React.FC<IntegerTagControlsProps> = ({ values, onChange, onSave, min = 0, max }) => {
     const handleTagChange = (tags: string[]) => {
         const newValues: Record<string, number> = {};
         tags.forEach((tag) => {
@@ -303,8 +300,9 @@ const PathSearcher: React.FC = () => {
 
     let pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_{cam:04}_distorted.png"
     pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_*_distorted.png"
-    const pathVarsInit = { pose: 10, cam:10, frame:10 }
-    
+    pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_*/cam_{cam:04}_distorted.png"
+    const pathVarsInit = { pose: 10, cam: 10, frame: 10 }
+
 
     const pathQueryName = "PathQuery"
     const pathVarsName = "PathVars"
@@ -392,7 +390,7 @@ const PathSearcher: React.FC = () => {
             <Accordion.Panel header="Python Code" defaultExpanded>
                 <ExevalEditor code={pythonImageCode} setCode={setPythonImageCode} onRun={onSave} />
             </Accordion.Panel>
-            <Accordion.Panel header="Images" >
+            <Accordion.Panel header="Images" defaultExpanded>
                 <ImagesGrid paths={paths} />
             </Accordion.Panel>
         </Accordion>
@@ -456,7 +454,7 @@ const ExevalEditor: React.FC = ({ code, setCode, onRun }) => {
 //     return <img src={url} {...imgProps} />;
 // }
 
-function Image({ path, cacheKey, isSelected, onSelect, ...imgProps }) {
+function Image({ path, cacheKey, isSelected, onSelect, index, ...imgProps }) {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
     const url = webeval.buildQueryUrl('/webeval/web/bytes/webeval_image.png', {
@@ -494,36 +492,51 @@ function Image({ path, cacheKey, isSelected, onSelect, ...imgProps }) {
             position: 'relative',
             border: isSelected ? '2px dashed yellow' : 'none',
             boxShadow: isSelected ? '0 0 5px black' : 'none',
+            height:"100%",
+            width:"100%",
 
         }} onMouseDown={handleClick}>
 
             {isLoading && (
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1 }}>
-                    Loading...
+                <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 1,
+                    color: 'white',
+                    textShadow: '0px 0px 10px rgba(0, 0, 0, 1)',
+                }}>
+                   Loading...
+                   <br/>
+                   <Loader size="xs" content="" /> 
                 </div>
+
             )}
-<div style={{            filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
-            transition: 'filter 0.3s',}}>
-            {hasError && (
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1 }}>
-                    Error
-                </div>
-            )}
-            <div style={{ fontSize: '5pt', opacity: 0.5, marginTop: '2px' }}>{filename}</div>
-            <img
-                src={url}
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-                loading="lazy"
-                {...imgProps}
-            /></div>
+            <div style={{
+                filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
+                transition: 'filter 0.3s',
+            }}>
+                {hasError && (
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1 }}>
+                        Error
+                    </div>
+                )}
+                {/* <div style={{ fontSize: '5pt', opacity: 0.5, marginTop: '2px' }}>{filename}</div> */}
+                <img
+                    src={url}
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                    loading="lazy"
+                    {...imgProps}
+                /></div>
         </div>
     );
 }
 
 function ImagesGrid({ paths, imgProps = {} }) {
     const [cacheKey, setCacheKey] = useState(0);
-    const [numColumns, setNumColumns] = useState(18);
+    const [numColumns, setNumColumns] = useState(9);
     const [selectedPaths, setSelectedPaths] = useState([]);
     const [showSelected, setShowSelected] = useState(true);
     const [showDeselected, setShowDeselected] = useState(true);
@@ -594,8 +607,8 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     onChange={handleNumColumnsChange}
                     style={{ width: '200px' }}
                 />
-                <IconButton icon={<LoadIcon/>} onClick={handleLoadSelectedPaths}>Load Selected Paths</IconButton>
-                <IconButton icon={<SaveIcon/>} onClick={handleSaveSelectedPaths}>Save Selected Paths</IconButton>
+                <IconButton icon={<LoadIcon />} onClick={handleLoadSelectedPaths}>Load Selected Paths</IconButton>
+                <IconButton icon={<SaveIcon />} onClick={handleSaveSelectedPaths}>Save Selected Paths</IconButton>
                 <Toggle
                     checked={showSelected}
                     onChange={setShowSelected}
@@ -609,27 +622,28 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     unCheckedChildren="Hide Deselected"
                 />
             </ButtonToolbar>
-            <br/>
+            <br />
             <div
-  style={{
-    display: 'grid',
-    gridTemplateColumns: `repeat(${numColumns}, 1fr)`,
-    gap: '10px',
-  }}
->
-  {filteredPaths.map((path, index) => (
-    <div key={index}>
-      <Image
-        path={path}
-        cacheKey={cacheKey}
-        isSelected={selectedPaths.includes(path)}
-        onSelect={handleSelectPath}
-        style={{ width: '100%', height: 'auto' }}
-        {...imgProps}
-      />
-    </div>
-  ))}
-</div>
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${numColumns}, 1fr)`,
+                    gap: '10px',
+                }}
+            >
+                {filteredPaths.map((path, index) => (
+                    <div key={index}>
+                        <Image
+                            path={path}
+                            cacheKey={cacheKey}
+                            isSelected={selectedPaths.includes(path)}
+                            onSelect={handleSelectPath}
+                            style={{ width: '100%', height: 'auto' }}
+                            {...imgProps}
+                            index = {index}
+                        />
+                    </div>
+                ))}
+            </div>
         </>
     );
 }
