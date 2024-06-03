@@ -12,6 +12,8 @@ import ReadyRoundIcon from '@rsuite/icons/ReadyRound';
 import SaveIcon from '@rsuite/icons/FileDownload';
 import LoadIcon from '@rsuite/icons/FileUpload';
 import ReloadIcon from '@rsuite/icons/Reload';
+import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
+
 import { IconButton, ButtonToolbar } from 'rsuite';
 import { Toggle } from 'rsuite';
 import { Loader } from 'rsuite';
@@ -301,7 +303,7 @@ const PathSearcher: React.FC = () => {
     let pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_{cam:04}_distorted.png"
     pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_{frame:04}/cam_*_distorted.png"
     pathQueryInit = "/efs/users/mingmingh/Code/Data/precache/structured_data/vps05_2023/vps05_zorianna_2023112803/precache/olat/pose_{pose:04}/frame_*/cam_{cam:04}_distorted.png"
-    const pathVarsInit = { pose: 28, cam: 35, frame: 10 }
+    const pathVarsInit = { pose: 14, cam: 35, frame: 54 }
 
 
     const pathQueryName = "PathQuery"
@@ -534,12 +536,23 @@ function Image({ path, cacheKey, isSelected, onSelect, index, ...imgProps }) {
     );
 }
 
+
+function roll(arr, shift) {
+    return arr.slice(shift).concat(arr.slice(0, shift));
+}
+
+
 function ImagesGrid({ paths, imgProps = {} }) {
     const [cacheKey, setCacheKey] = useState(0);
     const [numColumns, setNumColumns] = useState(18);
     const [selectedPaths, setSelectedPaths] = useState([]);
     const [showSelected, setShowSelected] = useState(true);
     const [showDeselected, setShowDeselected] = useState(true);
+    const [rollShift, setRollShift] = useState(0);
+
+    const handleRollShiftChange = (value) => {
+        setRollShift(value);
+    };
 
     const handleInvalidateCache = () => {
         setCacheKey((prevKey) => prevKey + 1);
@@ -592,12 +605,13 @@ function ImagesGrid({ paths, imgProps = {} }) {
         return (isSelected && showSelected) || (!isSelected && showDeselected);
     });
 
+    const rolledIndices = roll(filteredPaths.map((_, index) => index), rollShift);
+
     return (
         <>
             <ButtonToolbar>
                 <IconButton icon={<ReloadIcon />} onClick={handleInvalidateCache}>
                     Reload Images
-                    {/* Invalidate Image Cache */}
                 </IconButton>
                 <InputNumber
                     prefix="Columns:"
@@ -607,8 +621,12 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     onChange={handleNumColumnsChange}
                     style={{ width: '200px' }}
                 />
-                <IconButton icon={<LoadIcon />} onClick={handleLoadSelectedPaths}>Load Selected Paths</IconButton>
-                <IconButton icon={<SaveIcon />} onClick={handleSaveSelectedPaths}>Save Selected Paths</IconButton>
+                <IconButton icon={<LoadIcon />} onClick={handleLoadSelectedPaths}>
+                    Load Selected Paths
+                </IconButton>
+                <IconButton icon={<SaveIcon />} onClick={handleSaveSelectedPaths}>
+                    Save Selected Paths
+                </IconButton>
                 <Toggle
                     checked={showSelected}
                     onChange={setShowSelected}
@@ -621,6 +639,15 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     checkedChildren="See Deselected"
                     unCheckedChildren="Hide Deselected"
                 />
+                <InputNumber
+                    prefix="Roll Shift:"
+                    value={rollShift}
+                    min={-filteredPaths.length}
+                    max={filteredPaths.length}
+                    step={1}
+                    onChange={handleRollShiftChange}
+                    style={{ width: '200px' }}
+                />
             </ButtonToolbar>
             <br />
             <div
@@ -630,19 +657,22 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     gap: '5px',
                 }}
             >
-                {filteredPaths.map((path, index) => (
-                    <div key={index}>
-                        <Image
-                            path={path}
-                            cacheKey={cacheKey}
-                            isSelected={selectedPaths.includes(path)}
-                            onSelect={handleSelectPath}
-                            style={{ width: '100%', height: 'auto' }}
-                            {...imgProps}
-                            index={index}
-                        />
-                    </div>
-                ))}
+                {rolledIndices.map((index) => {
+                    const path = filteredPaths[index];
+                    return (
+                        <div key={path}>
+                            <Image
+                                path={path}
+                                cacheKey={cacheKey}
+                                isSelected={selectedPaths.includes(path)}
+                                onSelect={handleSelectPath}
+                                style={{ width: '100%', height: 'auto' }}
+                                {...imgProps}
+                                index={index}
+                            />
+                        </div>
+                    );
+                })}
             </div>
         </>
     );
