@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import AppBrowser from './App';
 import AppCode from './CodeApp';
+import AppXY from './XYImageApp';
 import reportWebVitals from './reportWebVitals';
 import { Tabs, Placeholder } from 'rsuite';
 
@@ -18,6 +19,9 @@ root.render(
       </Tabs.Tab>
       <Tabs.Tab eventKey="2" title="File Browser">
         <AppBrowser />
+      </Tabs.Tab>
+      <Tabs.Tab eventKey="3" title="XY">
+        <AppXY />
       </Tabs.Tab>
     </Tabs>
   </React.StrictMode>
