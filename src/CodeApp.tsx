@@ -19,7 +19,7 @@ import { Toggle } from 'rsuite';
 import { Loader } from 'rsuite';
 import { Pagination } from 'rsuite';
 
-import { InputNumber,InputGroup, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
+import { InputNumber, InputGroup, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
 
 import webeval from './rp';
 
@@ -541,7 +541,9 @@ function Image({ path, cacheKey, isSelected, onSelect, index, ...imgProps }) {
 function roll(arr, shift) {
     return arr.slice(shift).concat(arr.slice(0, shift));
 }
-
+function modulo(x, y) {
+    return ((x % y) + y) % y;
+}
 
 
 
@@ -557,7 +559,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
     const [currentPage, setCurrentPage] = useState(1);
 
     const handleRollShiftChange = (value) => {
-        setRollShift(value);
+        setRollShift(modulo(value, filteredPaths.length));
     };
 
     const handleInvalidateCache = () => {
@@ -629,7 +631,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
 
     return (
         <>
-            <ButtonToolbar>
+            <ButtonToolbar style={{ justifyContent: 'center' }}>
                 <IconButton icon={<ReloadIcon />} onClick={handleInvalidateCache}>
                     Reload Images
                 </IconButton>
@@ -642,7 +644,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     style={{ width: '200px' }}
                 />
 
-<InputNumber
+                <InputNumber
                     prefix="Shift:"
                     value={rollShift}
                     min={-filteredPaths.length}
@@ -660,22 +662,22 @@ function ImagesGrid({ paths, imgProps = {} }) {
                         step={1}
                         onChange={handlePageChange}
                     />
-                    <InputGroup.Addon>/ {totalPages} 
-                    {/* pages */}
+                    <InputGroup.Addon>/ {totalPages}
+                        {/* pages */}
                     </InputGroup.Addon>
                 </InputGroup>
-                    <InputNumber style={{ width: '200px' }}
-                        prefix="Imgs/Page:"
-                        value={imagesPerPage}
-                        min={1}
-                        step={1}
-                        onChange={handleImagesPerPageChange}
-                    />
+                <InputNumber style={{ width: '200px' }}
+                    prefix="Imgs/Page:"
+                    value={imagesPerPage}
+                    min={1}
+                    step={1}
+                    onChange={handleImagesPerPageChange}
+                />
             </ButtonToolbar>
-            <br/>
+            <br />
 
-            <ButtonToolbar>
-            <IconButton icon={<LoadIcon />} onClick={handleLoadSelectedPaths}>
+            <ButtonToolbar style={{ justifyContent: 'center' }}>
+                <IconButton icon={<LoadIcon />} onClick={handleLoadSelectedPaths}>
                     Load Selection
                 </IconButton>
                 <IconButton icon={<SaveIcon />} onClick={handleSaveSelectedPaths}>
@@ -694,7 +696,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     unCheckedChildren="Hide Deselected"
                 />
             </ButtonToolbar>
-            <br/>
+            <br />
             <div
                 style={{
                     display: 'grid',
