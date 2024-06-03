@@ -17,8 +17,9 @@ import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { IconButton, ButtonToolbar } from 'rsuite';
 import { Toggle } from 'rsuite';
 import { Loader } from 'rsuite';
+import { Pagination } from 'rsuite';
 
-import { InputNumber, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
+import { InputNumber,InputGroup, Notification, InlineEdit, Highlight, Input, TagInput } from 'rsuite';
 
 import webeval from './rp';
 
@@ -542,6 +543,9 @@ function roll(arr, shift) {
 }
 
 
+
+
+
 function ImagesGrid({ paths, imgProps = {} }) {
     const [cacheKey, setCacheKey] = useState(0);
     const [numColumns, setNumColumns] = useState(18);
@@ -549,6 +553,8 @@ function ImagesGrid({ paths, imgProps = {} }) {
     const [showSelected, setShowSelected] = useState(true);
     const [showDeselected, setShowDeselected] = useState(true);
     const [rollShift, setRollShift] = useState(0);
+    const [imagesPerPage, setImagesPerPage] = useState(300);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const handleRollShiftChange = (value) => {
         setRollShift(value);
@@ -598,6 +604,15 @@ function ImagesGrid({ paths, imgProps = {} }) {
         URL.revokeObjectURL(url);
     };
 
+    const handleImagesPerPageChange = (value) => {
+        setImagesPerPage(value);
+        setCurrentPage(1);
+    };
+
+    const handlePageChange = (value) => {
+        setCurrentPage(value);
+    };
+
     const columnWidth = `${100 / numColumns}%`;
 
     const filteredPaths = paths.filter((path) => {
@@ -606,6 +621,11 @@ function ImagesGrid({ paths, imgProps = {} }) {
     });
 
     const rolledIndices = roll(filteredPaths.map((_, index) => index), rollShift);
+
+    const totalPages = Math.ceil(rolledIndices.length / imagesPerPage);
+    const startIndex = (currentPage - 1) * imagesPerPage;
+    const endIndex = startIndex + imagesPerPage;
+    const paginatedIndices = rolledIndices.slice(startIndex, endIndex);
 
     return (
         <>
@@ -621,11 +641,45 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     onChange={handleNumColumnsChange}
                     style={{ width: '200px' }}
                 />
-                <IconButton icon={<LoadIcon />} onClick={handleLoadSelectedPaths}>
-                    Load Selected Paths
+
+<InputNumber
+                    prefix="Shift:"
+                    value={rollShift}
+                    min={-filteredPaths.length}
+                    max={filteredPaths.length}
+                    step={1}
+                    onChange={handleRollShiftChange}
+                    style={{ width: '180px' }}
+                />
+                <InputGroup style={{ width: '180px' }}>
+                    <InputNumber
+                        prefix="Page:"
+                        value={currentPage}
+                        min={1}
+                        max={totalPages}
+                        step={1}
+                        onChange={handlePageChange}
+                    />
+                    <InputGroup.Addon>/ {totalPages} 
+                    {/* pages */}
+                    </InputGroup.Addon>
+                </InputGroup>
+                    <InputNumber style={{ width: '200px' }}
+                        prefix="Imgs/Page:"
+                        value={imagesPerPage}
+                        min={1}
+                        step={1}
+                        onChange={handleImagesPerPageChange}
+                    />
+            </ButtonToolbar>
+            <br/>
+
+            <ButtonToolbar>
+            <IconButton icon={<LoadIcon />} onClick={handleLoadSelectedPaths}>
+                    Load Selection
                 </IconButton>
                 <IconButton icon={<SaveIcon />} onClick={handleSaveSelectedPaths}>
-                    Save Selected Paths
+                    Save Selection
                 </IconButton>
                 <Toggle
                     checked={showSelected}
@@ -639,17 +693,8 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     checkedChildren="See Deselected"
                     unCheckedChildren="Hide Deselected"
                 />
-                <InputNumber
-                    prefix="Roll Shift:"
-                    value={rollShift}
-                    min={-filteredPaths.length}
-                    max={filteredPaths.length}
-                    step={1}
-                    onChange={handleRollShiftChange}
-                    style={{ width: '200px' }}
-                />
             </ButtonToolbar>
-            <br />
+            <br/>
             <div
                 style={{
                     display: 'grid',
@@ -657,7 +702,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     gap: '5px',
                 }}
             >
-                {rolledIndices.map((index) => {
+                {paginatedIndices.map((index) => {
                     const path = filteredPaths[index];
                     return (
                         <div key={path}>
