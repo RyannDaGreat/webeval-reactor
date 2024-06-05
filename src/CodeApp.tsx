@@ -457,7 +457,7 @@ const ExevalEditor: React.FC = ({ code, setCode, onRun }) => {
 //     return <img src={url} {...imgProps} />;
 // }
 
-function Image({ path, cacheKey, isSelected, onSelect, index, ...imgProps }) {
+function Image({ path, cacheKey, isSelected, onSelect, index, style, ...imgProps }) {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
     const url = webeval.buildQueryUrl('/webeval/web/bytes/webeval_image.png', {
@@ -493,11 +493,8 @@ function Image({ path, cacheKey, isSelected, onSelect, index, ...imgProps }) {
         <div style={{
             textAlign: 'center',
             position: 'relative',
-            border: isSelected ? '2px dashed yellow' : 'none',
-            boxShadow: isSelected ? '0 0 5px black' : 'none',
-            height: "100%",
-            width: "100%",
-
+height:"calc(100% - 4px)%",
+width:"calc(100% - 4px)%",
         }} onMouseDown={handleClick}>
 
             {isLoading && (
@@ -517,8 +514,6 @@ function Image({ path, cacheKey, isSelected, onSelect, index, ...imgProps }) {
 
             )}
             <div style={{
-                filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
-                transition: 'filter 0.3s',
             }}>
                 {hasError && (
                     <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1 }}>
@@ -531,6 +526,12 @@ function Image({ path, cacheKey, isSelected, onSelect, index, ...imgProps }) {
                     onLoad={handleImageLoad}
                     onError={handleImageError}
                     loading="lazy"
+                    style={{...style,            border: isSelected ? '2px dashed yellow' : 'none',
+                    boxShadow: isSelected ? '0 0 5px black' : 'none',
+                    height: isSelected ? 'calc(100% - 4px)' : '100%',
+                    width: isSelected ? 'calc(100% - 4px)' : '100%',
+                    filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
+                transition: 'filter 0.3s',}}
                     {...imgProps}
                 /></div>
         </div>
@@ -557,6 +558,8 @@ function ImagesGrid({ paths, imgProps = {} }) {
     const [rollShift, setRollShift] = useState(0);
     const [imagesPerPage, setImagesPerPage] = useState(300);
     const [currentPage, setCurrentPage] = useState(1);
+    const [hoverPath, setHoverPath] = useState(null);
+    const [showHoverZoom, setShowHoverZoom] = useState(false);
 
     const handleRollShiftChange = (value) => {
         setRollShift(modulo(value, filteredPaths.length));
@@ -615,6 +618,14 @@ function ImagesGrid({ paths, imgProps = {} }) {
         setCurrentPage(value);
     };
 
+    const handleMouseEnter = (path) => {
+        setHoverPath(path);
+    };
+
+    const handleMouseLeave = () => {
+        setHoverPath(null);
+    };
+
     const columnWidth = `${100 / numColumns}%`;
 
     const filteredPaths = paths.filter((path) => {
@@ -643,7 +654,6 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     onChange={handleNumColumnsChange}
                     style={{ width: '200px' }}
                 />
-
                 <InputNumber
                     prefix="Shift:"
                     value={rollShift}
@@ -662,11 +672,10 @@ function ImagesGrid({ paths, imgProps = {} }) {
                         step={1}
                         onChange={handlePageChange}
                     />
-                    <InputGroup.Addon>/ {totalPages}
-                        {/* pages */}
-                    </InputGroup.Addon>
+                    <InputGroup.Addon>/ {totalPages}</InputGroup.Addon>
                 </InputGroup>
-                <InputNumber style={{ width: '200px' }}
+                <InputNumber
+                    style={{ width: '200px' }}
                     prefix="Imgs/Page:"
                     value={imagesPerPage}
                     min={1}
@@ -675,7 +684,6 @@ function ImagesGrid({ paths, imgProps = {} }) {
                 />
             </ButtonToolbar>
             <br />
-
             <ButtonToolbar style={{ justifyContent: 'center' }}>
                 <IconButton icon={<LoadIcon />} onClick={handleLoadSelectedPaths}>
                     Load Selection
@@ -695,25 +703,55 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     checkedChildren="See Deselected"
                     unCheckedChildren="Hide Deselected"
                 />
+                <Toggle
+                    checked={showHoverZoom}
+                    onChange={setShowHoverZoom}
+                    checkedChildren="Hover-Zoom On"
+                    unCheckedChildren="Hover-Zoom Off"
+                />
             </ButtonToolbar>
             <br />
             <div
                 style={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${numColumns}, 1fr)`,
-                    gap: '5px',
+                    gap: '0px',
                 }}
             >
                 {paginatedIndices.map((index) => {
                     const path = filteredPaths[index];
+                    const isHovered = hoverPath === path;
+                    const doHoverZoom = showHoverZoom && isHovered;
+                    const imgStyle = {
+                        width: '100%',
+                        height: 'auto',
+                        ...imgProps.style,
+                    };
+
+                    if (doHoverZoom) {
+                        imgStyle.position = 'fixed';
+                        imgStyle.top = '50%';
+                        imgStyle.left = '50%';
+                        imgStyle.transform = 'translate(-50%, -50%)';
+                        imgStyle.zIndex = '9999';
+                        imgStyle.maxWidth = 'calc(100% - 40px)';
+                        imgStyle.maxHeight = 'calc(100% - 40px)';
+                        imgStyle.objectFit = 'contain';
+                        imgStyle.pointerEvents = 'none';
+                    }
+
                     return (
-                        <div key={path}>
+                        <div
+                            key={path}
+                            onMouseEnter={() => handleMouseEnter(path)}
+                            onMouseLeave={handleMouseLeave}
+                        >
                             <Image
                                 path={path}
                                 cacheKey={cacheKey}
                                 isSelected={selectedPaths.includes(path)}
                                 onSelect={handleSelectPath}
-                                style={{ width: '100%', height: 'auto' }}
+                                style={imgStyle}
                                 {...imgProps}
                                 index={index}
                             />
