@@ -1,8 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
-<head><script type="text/javascript" src="/___vscode_livepreview_injected_script"></script>
+<head>
+    <script type="text/javascript" src="/___vscode_livepreview_injected_script"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualizing Derivatives with Gaussian Noise Canvas Texture</title>
@@ -64,7 +64,7 @@
             const noiseCanvas = document.createElement('canvas');
             const noiseContext = noiseCanvas.getContext('2d');
             let noiseres = 4096
-            noiseres*=4 //Slow to load but better
+            noiseres *= 4 //Slow to load but better
             noiseCanvas.width = noiseCanvas.height = noiseres;
             const imageData = noiseContext.createImageData(noiseres, noiseres);
             for (let i = 0; i < imageData.data.length; i += 4) {
@@ -199,41 +199,41 @@
 
 
             // Geometry dropdown setup
-const geometryDropdown = document.createElement('select');
-geometryDropdown.innerHTML = `
+            const geometryDropdown = document.createElement('select');
+            geometryDropdown.innerHTML = `
     <option value="cube">Cube</option>
     <option value="cylinder">Cylinder</option>
     <option value="torus">Torus</option>
     <option value="tetrahedron">Tetrahedron</option>
     <option value="sphere">Sphere</option>
 `;
-geometryDropdown.value = 'sphere';
-geometryDropdown.addEventListener('change', function () {
-    const selectedGeometry = this.value;
-    let newGeometry;
-    switch (selectedGeometry) {
-        case 'sphere':
-            newGeometry = new THREE.SphereGeometry();
-            break;
-        case 'cube':
-            newGeometry = new THREE.BoxGeometry();
-            break;
-        case 'cylinder':
-            newGeometry = new THREE.CylinderGeometry();
-            break;
-        case 'torus':
-            newGeometry = new THREE.TorusGeometry();
-            break;
-        case 'sphere':
-        newGeometry = new THREE.SphereGeometry();
-            break;
-        case 'tetrahedron':
-            newGeometry = new THREE.TetrahedronGeometry();
-            break;
-    }
-    cube.geometry.dispose();
-    cube.geometry = newGeometry;
-});
-document.getElementById('controls').appendChild(geometryDropdown);
+            geometryDropdown.value = 'sphere';
+            geometryDropdown.addEventListener('change', function () {
+                const selectedGeometry = this.value;
+                let newGeometry;
+                switch (selectedGeometry) {
+                    case 'sphere':
+                        newGeometry = new THREE.SphereGeometry();
+                        break;
+                    case 'cube':
+                        newGeometry = new THREE.BoxGeometry();
+                        break;
+                    case 'cylinder':
+                        newGeometry = new THREE.CylinderGeometry();
+                        break;
+                    case 'torus':
+                        newGeometry = new THREE.TorusGeometry();
+                        break;
+                    case 'sphere':
+                        newGeometry = new THREE.SphereGeometry();
+                        break;
+                    case 'tetrahedron':
+                        newGeometry = new THREE.TetrahedronGeometry();
+                        break;
+                }
+                cube.geometry.dispose();
+                cube.geometry = newGeometry;
+            });
+            document.getElementById('controls').appendChild(geometryDropdown);
         });
     </script>
