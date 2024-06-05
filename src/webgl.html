@@ -100,12 +100,12 @@
 
             // Geometry and material setup  
             let geometry;
-            // geometry = new THREE.BoxGeometry();
+            geometry = new THREE.BoxGeometry();
 
-            geometry = new THREE.SphereGeometry();
-            geometry = new THREE.CylinderGeometry();
-            geometry = new THREE.TorusGeometry();
-            geometry = new THREE.TetrahedronGeometry();
+            // geometry = new THREE.SphereGeometry();
+            // geometry = new THREE.CylinderGeometry();
+            // geometry = new THREE.TorusGeometry();
+            // geometry = new THREE.TetrahedronGeometry();
             const material = new THREE.ShaderMaterial({
                 vertexShader: `
                 varying vec2 vUv;
