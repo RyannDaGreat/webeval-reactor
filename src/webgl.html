@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizing Derivatives with White Noise Canvas Texture</title>
+    <title>Visualizing Derivatives with Gaussian Noise Canvas Texture</title>
     <style>
         body { margin: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; height: 100vh; }
         canvas { width: 100vw; height: 90vh; }
@@ -24,74 +24,82 @@
             renderer.setSize(window.innerWidth, window.innerHeight * 0.9); // Adjust for control panel
             document.body.insertBefore(renderer.domElement, document.getElementById('controls'));
 
-            // Create a canvas and draw white noise
-            const noiseCanvas = document.createElement('canvas');
-            const noiseContext = noiseCanvas.getContext('2d');
-            noiseCanvas.width = noiseCanvas.height = 128;
-            const imageData = noiseContext.createImageData(128, 128);
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                const color = Math.random() * 255;
-                imageData.data[i] = color; // Red
-                imageData.data[i + 1] = color; // Green
-                imageData.data[i + 2] = color; // Blue
-                imageData.data[i + 3] = 255;   // Alpha
-            }
-            noiseContext.putImageData(imageData, 0, 0);
-            const texture = new THREE.CanvasTexture(noiseCanvas);
-            texture.magFilter = THREE.NearestFilter;
-            texture.minFilter = THREE.NearestFilter;
+// Create a canvas and draw Gaussian noise
+const noiseCanvas = document.createElement('canvas');
+        const noiseContext = noiseCanvas.getContext('2d');
+        const noiseres=1280
+        noiseCanvas.width = noiseCanvas.height = noiseres;
+        const imageData = noiseContext.createImageData(noiseres, noiseres);
+        for (let i = 0; i < imageData.data.length; i += 4) {
+            const u = Math.random();
+            const v = Math.random();
+            const color = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v) * 0.5 + 0.5;
+            imageData.data[i] = color * 255;     // Red
+            imageData.data[i + 1] = color * 255; // Green   
+            imageData.data[i + 2] = color * 255; // Blue
+            imageData.data[i + 3] = 255;         // Alpha
+        }
+        noiseContext.putImageData(imageData, 0, 0);
+        const texture = new THREE.CanvasTexture(noiseCanvas);
+        texture.magFilter = THREE.LinearFilter;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
-            // Geometry and material setup
-            const geometry = new THREE.BoxGeometry();
-            const material = new THREE.ShaderMaterial({
-                vertexShader: `
-                    varying vec2 vUv;
-                    void main() {
-                        vUv = uv;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                `,
-                fragmentShader: `
-                    varying vec2 vUv;
-                    uniform float brightness;
-                    uniform sampler2D noiseTexture;
-                    void main() {
-                        vec2 dx = dFdx(vUv) * brightness;
-                        vec2 dy = dFdy(vUv) * brightness;
-                        float noiseValue = texture2D(noiseTexture, vUv).b; // Use the blue channel for noise
-                        gl_FragColor = vec4(abs(dx.x), abs(dy.y), noiseValue, 1.0);
-                    }
-                `,
-                uniforms: {
-                    brightness: { value: 1.0 },
-                    noiseTexture: { value: texture }
+        // Geometry and material setup  
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.ShaderMaterial({
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);  
                 }
-            });
-            const cube = new THREE.Mesh(geometry, material);
-            scene.add(cube);
-
-            camera.position.z = 5;
-
-            function animate() {
-                requestAnimationFrame(animate);
-                cube.rotation.x += 0.01;
-                cube.rotation.y += 0.01;
-                renderer.render(scene, camera);
+            `,
+            fragmentShader: `
+                varying vec2 vUv;
+                uniform float brightness;
+                uniform sampler2D noiseTexture;
+                void main() {
+                    vec2 dx = dFdx(vUv) * brightness;
+                    vec2 dy = dFdy(vUv) * brightness;
+                    float det = abs(dx.x * dy.y - dx.y * dy.x);
+                    vec3 noiseColor = texture2D(noiseTexture, vUv).rgb;
+                    noiseColor=(noiseColor-.5);
+                    noiseColor = pow(noiseColor, vec3(1.0 / det));
+                    noiseColor=(noiseColor+.5);
+                    gl_FragColor = vec4(noiseColor, 1.0);
+                } 
+            `,
+            uniforms: {
+                brightness: { value: 1.0 },
+                noiseTexture: { value: texture }
             }
-            animate();
-
-            // Slider functionality
-            let brightnessSlider = document.getElementById('brightnessSlider');
-            brightnessSlider.addEventListener('input', function () {
-                material.uniforms.brightness.value = parseFloat(this.value);
-            });
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / (window.innerHeight * 0.9);
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
-            });
         });
-    </script>
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            cube.rotation.x += 0.001;
+            cube.rotation.y += 0.001;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Slider functionality
+        let brightnessSlider = document.getElementById('brightnessSlider');
+        brightnessSlider.addEventListener('input', function () {
+            material.uniforms.brightness.value = parseFloat(this.value);
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / (window.innerHeight * 0.9);
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight * 0.9); 
+        });
+    });
+</script>
 </body>
 </html>
