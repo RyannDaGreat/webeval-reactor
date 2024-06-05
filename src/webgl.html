@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rotatable Cube with Three.js</title>
+    <title>Rotatable Cube with Non-Filtered Checkerboard Texture</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -15,13 +15,29 @@
         document.addEventListener('DOMContentLoaded', () => {
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
             const renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
+            // Create a checkerboard canvas texture
+            const size = 64; // size of the checkerboard squares
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = canvas.height = size * 2; // canvas size
+            for (let i = 0; i < size * 2; i += size) {
+                for (let j = 0; j < size * 2; j += size) {
+                    context.fillStyle = ((i + j) / size % 2 === 0) ? '#FFFFFF' : '#000000';
+                    context.fillRect(i, j, size, size);
+                }
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.magFilter = THREE.NearestFilter; // Disable texture filtering
+            texture.minFilter = THREE.NearestFilter;
+            texture.generateMipmaps = false; // Disable mipmaps
+
             const geometry = new THREE.BoxGeometry();
-            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+            const material = new THREE.MeshBasicMaterial({ map: texture });
             const cube = new THREE.Mesh(geometry, material);
             scene.add(cube);
 
