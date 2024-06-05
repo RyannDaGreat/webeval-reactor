@@ -3,42 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Anisotropic Filtering</title>
+    <title>Visualizing Derivatives with White Noise Texture</title>
     <style>
-        body { margin: 0; }
-        canvas { display: block; }
+        body { margin: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+        canvas { width: 100vw; height: 90vh; }
+        #controls { width: 100%; display: flex; justify-content: center; align-items: center; height: 10vh; }
+        .slider { width: 80%; }
     </style>
 </head>
 <body>
+    <div id="controls">
+        <input type="range" class="slider" id="brightnessSlider" min="0.1" max="10" step="0.1" value="1">
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+            renderer.setSize(window.innerWidth, window.innerHeight * 0.9); // Adjust for control panel
+            document.body.insertBefore(renderer.domElement, document.getElementById('controls'));
 
-            const size = 64; // Size of the checkerboard squares
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = canvas.height = size * 2; // Canvas size
-            for (let i = 0; i < size * 2; i += size) {
-                for (let j = 0; j < size * 2; j += size) {
-                    context.fillStyle = ((i + j) / size % 2 === 0) ? '#FFFFFF' : '#000000';
-                    context.fillRect(i, j, size, size);
-                }
+            // Create white noise texture
+            const noiseSize = 128;
+            const data = new Uint8Array(noiseSize * noiseSize * 3);
+            for (let i = 0; i < data.length; i += 3) {
+                const val = Math.floor(Math.random() * 256);
+                data[i] = data[i + 1] = data[i + 2] = val;
             }
+            const texture = new THREE.DataTexture(data, noiseSize, noiseSize, THREE.RGBFormat);
+            texture.needsUpdate = true;
 
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.magFilter = THREE.NearestFilter;
-            texture.minFilter = THREE.NearestFilter;
-            texture.generateMipmaps = false;
-
+            // Geometry and material setup
+            const geometry = new THREE.BoxGeometry();
             const material = new THREE.ShaderMaterial({
-                uniforms: {
-                    texture: { value: texture }
-                },
                 vertexShader: `
                     varying vec2 vUv;
                     void main() {
@@ -47,40 +45,21 @@
                     }
                 `,
                 fragmentShader: `
-                    uniform sampler2D texture;
                     varying vec2 vUv;
+                    uniform float brightness;
+                    uniform sampler2D noiseTexture;
                     void main() {
-                        // Calculate gradients
-                        vec2 dx = dFdx(vUv);
-                        vec2 dy = dFdy(vUv);
-
-                        // Determine which gradient has a higher magnitude
-                        float dxLength = length(dx);
-                        float dyLength = length(dy);
-
-                        // Choose the larger gradient as the direction to apply anisotropic filtering
-                        vec2 grad = dxLength > dyLength ? dx : dy;
-                        vec2 gradDir = normalize(grad);
-
-                        // Number of samples (you can adjust this)
-                        int samples = 4;
-                        float scale = 2.0;
-
-                        // Sampling along the gradient
-                        vec4 texColor = vec4(0.0);
-                        for (int i = -samples / 2; i <= samples / 2; ++i) {
-                            float offset = float(i) * scale * length(grad);
-                            texColor += texture2D(texture, vUv + gradDir * offset);
-                        }
-                        texColor /= float(samples + 1);
-
-                        // Output the final color
-                        gl_FragColor = texColor;
+                        vec2 dx = dFdx(vUv) * brightness;
+                        vec2 dy = dFdy(vUv) * brightness;
+                        vec3 noise = texture2D(noiseTexture, vUv).rgb;
+                        gl_FragColor = vec4(abs(dx.x), abs(dy.y), noise.b, 1.0);
                     }
-                `
+                `,
+                uniforms: {
+                    brightness: { value: 1.0 },
+                    noiseTexture: { value: texture }
+                }
             });
-
-            const geometry = new THREE.BoxGeometry();
             const cube = new THREE.Mesh(geometry, material);
             scene.add(cube);
 
@@ -92,13 +71,18 @@
                 cube.rotation.y += 0.01;
                 renderer.render(scene, camera);
             }
-
             animate();
 
+            // Slider functionality
+            let brightnessSlider = document.getElementById('brightnessSlider');
+            brightnessSlider.addEventListener('input', function () {
+                material.uniforms.brightness.value = parseFloat(this.value);
+            });
+
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.aspect = window.innerWidth / (window.innerHeight * 0.9);
                 camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
             });
         });
     </script>
