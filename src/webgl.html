@@ -1,7 +1,8 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
+<head><script type="text/javascript" src="/___vscode_livepreview_injected_script"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visualizing Derivatives with Gaussian Noise Canvas Texture</title>
@@ -38,57 +39,73 @@
 <body>
     <div id="controls">
         <label for="brightnessSlider">Contrast:</label>
-        <input type="range" class="slider" id="brightnessSlider" min="0.1" max="3" step="0.001" value="500">
+        <input type="range" class="slider" id="brightnessSlider" min="0" max="2" step="0.1" value="500">
         <label for="zoomSlider">FOV:</label>
-        <input type="range" class="slider" id="zoomSlider" min="1" max="75" step=".0001" value="24">
+        <input type="range" class="slider" id="zoomSlider" min="1" max="75" step=".01" value="24">
         <label for="speedSlider">Speed:</label>
         <input type="range" class="slider" id="speedSlider" min="-.002" max=".002" step=".000001" value=".001">
+        <label for="pauseCheckbox">Play/Pause:</label>
+        <input type="checkbox" id="pauseCheckbox" checked>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(24, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer(
-                // {antialiasing:true}
-                );
-            renderer.setSize(window.innerWidth, window.innerHeight * 0.8); // Adjust for control panel
-            document.body.insertBefore(renderer.domElement, document.getElementById('controls'));
+            const renderer = new THREE.WebGLRenderer();
 
+            // Set pixel ratio for retina displays
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight * 0.8); // Adjust for control panel
+
+            document.body.insertBefore(renderer.domElement, document.getElementById('controls'));
+            let paused = false
             // Create a canvas and draw Gaussian noise
             const noiseCanvas = document.createElement('canvas');
             const noiseContext = noiseCanvas.getContext('2d');
-            const noiseres = 4096
+            let noiseres = 4096
+            noiseres*=4 //Slow to load but better
             noiseCanvas.width = noiseCanvas.height = noiseres;
             const imageData = noiseContext.createImageData(noiseres, noiseres);
             for (let i = 0; i < imageData.data.length; i += 4) {
                 // UPDATE: We should calculate the gaussian values later
-                const u = Math.random();
-                const v = Math.random();
-                const color = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v) * 0.5 + 0.5;
+                const randn = () => {
+                    const u = Math.random();
+                    const v = Math.random();
+                    const color = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v) * 0.5 + 0.5;
+                    return color
+                }
+                const r = randn();
+                const g = randn();
+                const b = randn();
                 // const color =  Math.random();
 
-                imageData.data[i] = color * 255;     // Red
-                imageData.data[i + 1] = color * 255; // Green   
-                imageData.data[i + 2] = color * 255; // Blue
+                imageData.data[i] = r * 255;     // Red
+                imageData.data[i + 1] = g * 255; // Green   
+                imageData.data[i + 2] = b * 255; // Blue
                 imageData.data[i + 3] = 255;         // Alpha
             }
             noiseContext.putImageData(imageData, 0, 0);
             const texture = new THREE.CanvasTexture(noiseCanvas);
-            texture.magFilter = THREE.NearestFilter;
-            // texture.minFilter = THREE.LinearMipmapNearestFilter;
-            // texture.minFilter = THREE.NearestMipmapNearestFilter; //Most obvious mipmap artifacts
-            texture.minFilter = THREE.LinearMipmapLinearFilter; //Best one
+            texture.magFilter = THREE.LinearFilter;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
 
             // texture.magFilter = THREE.NearestFilter;
             // texture.minFilter = THREE.NearestFilter;
             // texture.generateMipmaps = false;
 
 
-            texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); //It's 16. Doesn't look like it tho, it looks trash...
+            // alert( texture.anisotropy )
 
             // Geometry and material setup  
-            const geometry = new THREE.BoxGeometry();
+            let geometry;
+            // geometry = new THREE.BoxGeometry();
+
+            geometry = new THREE.SphereGeometry();
+            geometry = new THREE.CylinderGeometry();
+            geometry = new THREE.TorusGeometry();
+            geometry = new THREE.TetrahedronGeometry();
             const material = new THREE.ShaderMaterial({
                 vertexShader: `
                 varying vec2 vUv;
@@ -100,38 +117,53 @@
                 fragmentShader: `
                 varying vec2 vUv;
                 uniform float brightness;
-                uniform float noiseres;
                 uniform sampler2D noiseTexture;
                 void main() {
-                    vec2 dx = dFdx(vUv) * noiseres;
-                    vec2 dy = dFdy(vUv) * noiseres; 
+                    vec2 dx = dFdx(vUv) * brightness;
+                    vec2 dy = dFdy(vUv) * brightness;
                     float det = abs(dx.x * dy.y - dx.y * dy.x);
                     vec3 noiseColor = texture2D(noiseTexture, vUv).rgb;
                     noiseColor=(noiseColor-.5);
-                    // noiseColor = pow(noiseColor, vec3(1.0 / det));
-                    // noiseColor=noiseColor*vec3(1.0 * det);
-                    noiseColor=noiseColor*vec3(max(1.0,1.0 * sqrt(det)));
+                    float factor=1.0;
+                    factor*= sqrt(det);
+                    //  factor*= det; //Wrong! Has to be sqrt
+                    factor=max(1.0,factor);
+                    noiseColor=noiseColor*vec3(factor);
                     // noiseColor=noiseColor*vec3(20);
                     noiseColor=(noiseColor+.5);
                     gl_FragColor = vec4(noiseColor, 1.0);
                 } 
             `,
                 uniforms: {
-                    brightness: { value: 1*noiseres },
-                    noiseTexture: { value: texture },
-                    noiseres: { value: noiseres },
+                    brightness: { value: 1.5 * noiseres },
+                    noiseTexture: { value: texture }
                 }
             });
             const cube = new THREE.Mesh(geometry, material);
             scene.add(cube);
 
+            // Background planes setup
+            const aspect = window.innerWidth / window.innerHeight;
+            const planeSize = Math.min(5, 5 * aspect);
+            const planeGeometry = new THREE.PlaneGeometry(planeSize, planeSize);
+            const planeMaterial = material; // Use the same material as the cube
+            for (let i = 0; i < 8; i++) {
+                const backgroundPlane = new THREE.Mesh(planeGeometry, planeMaterial);
+                backgroundPlane.position.set(
+                    (i % 4) * planeSize - planeSize / 4,
+                    Math.floor(i / 4) * planeSize - planeSize / 4,
+                    -1
+                );
+                scene.add(backgroundPlane);
+            }
+
             camera.position.z = 5;
 
-            let animspeed=.001;
+            let animspeed = .001;
             function animate() {
                 requestAnimationFrame(animate);
-                cube.rotation.x +=animspeed;
-                cube.rotation.y +=animspeed;
+                cube.rotation.x += animspeed * !paused;
+                cube.rotation.y += animspeed * !paused;
                 renderer.render(scene, camera);
             }
             animate();
@@ -157,7 +189,51 @@
             let speedSlider = document.getElementById('speedSlider');
             speedSlider.addEventListener('input', function () {
                 // camera.fov = parseFloat(this.value);
-                animspeed= parseFloat(this.value)
+                animspeed = parseFloat(this.value)
             });
+
+            let pauseCheckbox = document.getElementById('pauseCheckbox');
+            pauseCheckbox.addEventListener('change', function () {
+                paused = this.checked ? false : true;
+            });
+
+
+            // Geometry dropdown setup
+const geometryDropdown = document.createElement('select');
+geometryDropdown.innerHTML = `
+    <option value="cube">Cube</option>
+    <option value="cylinder">Cylinder</option>
+    <option value="torus">Torus</option>
+    <option value="tetrahedron">Tetrahedron</option>
+    <option value="sphere">Sphere</option>
+`;
+geometryDropdown.value = 'sphere';
+geometryDropdown.addEventListener('change', function () {
+    const selectedGeometry = this.value;
+    let newGeometry;
+    switch (selectedGeometry) {
+        case 'sphere':
+            newGeometry = new THREE.SphereGeometry();
+            break;
+        case 'cube':
+            newGeometry = new THREE.BoxGeometry();
+            break;
+        case 'cylinder':
+            newGeometry = new THREE.CylinderGeometry();
+            break;
+        case 'torus':
+            newGeometry = new THREE.TorusGeometry();
+            break;
+        case 'sphere':
+        newGeometry = new THREE.SphereGeometry();
+            break;
+        case 'tetrahedron':
+            newGeometry = new THREE.TetrahedronGeometry();
+            break;
+    }
+    cube.geometry.dispose();
+    cube.geometry = newGeometry;
+});
+document.getElementById('controls').appendChild(geometryDropdown);
         });
     </script>
