@@ -13,7 +13,7 @@
 </head>
 <body>
     <div id="controls">
-        <input type="range" class="slider" id="brightnessSlider" min="0.1" max="100" step="0.1" value="1">
+        <input type="range" class="slider" id="brightnessSlider" min="0.1" max="3" step="0.1" value="500">
     </div>
     <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
     <script>
@@ -27,13 +27,16 @@
 // Create a canvas and draw Gaussian noise
 const noiseCanvas = document.createElement('canvas');
         const noiseContext = noiseCanvas.getContext('2d');
-        const noiseres=1280
+        const noiseres=4024
         noiseCanvas.width = noiseCanvas.height = noiseres;
         const imageData = noiseContext.createImageData(noiseres, noiseres);
         for (let i = 0; i < imageData.data.length; i += 4) {
+            // UPDATE: We should calculate the gaussian values later
             const u = Math.random();
             const v = Math.random();
             const color = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v) * 0.5 + 0.5;
+            // const color =  Math.random();
+
             imageData.data[i] = color * 255;     // Red
             imageData.data[i + 1] = color * 255; // Green   
             imageData.data[i + 2] = color * 255; // Blue
@@ -65,7 +68,10 @@ const noiseCanvas = document.createElement('canvas');
                     float det = abs(dx.x * dy.y - dx.y * dy.x);
                     vec3 noiseColor = texture2D(noiseTexture, vUv).rgb;
                     noiseColor=(noiseColor-.5);
-                    noiseColor = pow(noiseColor, vec3(1.0 / det));
+                    // noiseColor = pow(noiseColor, vec3(1.0 / det));
+                    // noiseColor=noiseColor*vec3(1.0 * det);
+                    noiseColor=noiseColor*vec3(1.0 * sqrt(det));
+                    // noiseColor=noiseColor*vec3(20);
                     noiseColor=(noiseColor+.5);
                     gl_FragColor = vec4(noiseColor, 1.0);
                 } 
@@ -91,7 +97,7 @@ const noiseCanvas = document.createElement('canvas');
         // Slider functionality
         let brightnessSlider = document.getElementById('brightnessSlider');
         brightnessSlider.addEventListener('input', function () {
-            material.uniforms.brightness.value = parseFloat(this.value);
+            material.uniforms.brightness.value = parseFloat(this.value)*noiseres;
         });
 
         window.addEventListener('resize', () => {
