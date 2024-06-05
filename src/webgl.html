@@ -63,9 +63,9 @@
             // Create a canvas and draw Gaussian noise
             const noiseCanvas = document.createElement('canvas');
             const noiseContext = noiseCanvas.getContext('2d');
-            let noiseres = 1024
-            noiseres *=4 //Slow to load but better
-            noiseres *=4 //Slow to load but better
+            let noiseres = 128
+            // noiseres *=4 //Slow to load but better
+            // noiseres *=4 //Slow to load but better
             noiseCanvas.width = noiseCanvas.height = noiseres;
             const imageData = noiseContext.createImageData(noiseres, noiseres);
             for (let i = 0; i < imageData.data.length; i += 4) {
@@ -221,7 +221,7 @@
                         newGeometry = new THREE.BoxGeometry();
                         break;
                     case 'cylinder':
-                        newGeometry = new THREE.CylinderGeometry();
+                        newGeometry = new THREE.CylinderGeometry(.125,.125,1);
                         break;
                     case 'torus':
                         newGeometry = new THREE.TorusGeometry();
@@ -232,7 +232,7 @@
                     case 'tetrahedron':
                         newGeometry = new THREE.TetrahedronGeometry();
                         break;
-
+ 
                     case 'random':
                         //Currently broken garbles mush lol its ok claude made it
                         const originalSize = cube.scale.x;
