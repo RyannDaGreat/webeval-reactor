@@ -63,9 +63,9 @@
             // Create a canvas and draw Gaussian noise
             const noiseCanvas = document.createElement('canvas');
             const noiseContext = noiseCanvas.getContext('2d');
-            let noiseres = 128
-            // noiseres *=4 //Slow to load but better
-            // noiseres *=4 //Slow to load but better
+            let noiseres = 1024
+            noiseres *=4 //Slow to load but better
+            noiseres *=4 //Slow to load but better
             noiseCanvas.width = noiseCanvas.height = noiseres;
             const imageData = noiseContext.createImageData(noiseres, noiseres);
             for (let i = 0; i < imageData.data.length; i += 4) {
