@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rotatable Cube with Non-Filtered Checkerboard Texture</title>
+    <title>Custom Anisotropic Filtering</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -19,11 +19,10 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Create a checkerboard canvas texture
-            const size = 64; // size of the checkerboard squares
+            const size = 64; // Size of the checkerboard squares
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-            canvas.width = canvas.height = size * 2; // canvas size
+            canvas.width = canvas.height = size * 2; // Canvas size
             for (let i = 0; i < size * 2; i += size) {
                 for (let j = 0; j < size * 2; j += size) {
                     context.fillStyle = ((i + j) / size % 2 === 0) ? '#FFFFFF' : '#000000';
@@ -32,12 +31,56 @@
             }
 
             const texture = new THREE.CanvasTexture(canvas);
-            texture.magFilter = THREE.NearestFilter; // Disable texture filtering
+            texture.magFilter = THREE.NearestFilter;
             texture.minFilter = THREE.NearestFilter;
-            texture.generateMipmaps = false; // Disable mipmaps
+            texture.generateMipmaps = false;
+
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    texture: { value: texture }
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform sampler2D texture;
+                    varying vec2 vUv;
+                    void main() {
+                        // Calculate gradients
+                        vec2 dx = dFdx(vUv);
+                        vec2 dy = dFdy(vUv);
+
+                        // Determine which gradient has a higher magnitude
+                        float dxLength = length(dx);
+                        float dyLength = length(dy);
+
+                        // Choose the larger gradient as the direction to apply anisotropic filtering
+                        vec2 grad = dxLength > dyLength ? dx : dy;
+                        vec2 gradDir = normalize(grad);
+
+                        // Number of samples (you can adjust this)
+                        int samples = 4;
+                        float scale = 2.0;
+
+                        // Sampling along the gradient
+                        vec4 texColor = vec4(0.0);
+                        for (int i = -samples / 2; i <= samples / 2; ++i) {
+                            float offset = float(i) * scale * length(grad);
+                            texColor += texture2D(texture, vUv + gradDir * offset);
+                        }
+                        texColor /= float(samples + 1);
+
+                        // Output the final color
+                        gl_FragColor = texColor;
+                    }
+                `
+            });
 
             const geometry = new THREE.BoxGeometry();
-            const material = new THREE.MeshBasicMaterial({ map: texture });
             const cube = new THREE.Mesh(geometry, material);
             scene.add(cube);
 
