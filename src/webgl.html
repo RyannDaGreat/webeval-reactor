@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizing Derivatives with White Noise Texture</title>
+    <title>Visualizing Derivatives with White Noise Canvas Texture</title>
     <style>
         body { margin: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; height: 100vh; }
         canvas { width: 100vw; height: 90vh; }
@@ -13,26 +13,33 @@
 </head>
 <body>
     <div id="controls">
-        <input type="range" class="slider" id="brightnessSlider" min="0.1" max="10" step="0.1" value="1">
+        <input type="range" class="slider" id="brightnessSlider" min="0.1" max="100" step="0.1" value="1">
     </div>
     <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const camera = new THREE.PerspectiveCamera(24, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight * 0.9); // Adjust for control panel
             document.body.insertBefore(renderer.domElement, document.getElementById('controls'));
 
-            // Create white noise texture
-            const noiseSize = 128;
-            const data = new Uint8Array(noiseSize * noiseSize * 3);
-            for (let i = 0; i < data.length; i += 3) {
-                const val = Math.floor(Math.random() * 256);
-                data[i] = data[i + 1] = data[i + 2] = val;
+            // Create a canvas and draw white noise
+            const noiseCanvas = document.createElement('canvas');
+            const noiseContext = noiseCanvas.getContext('2d');
+            noiseCanvas.width = noiseCanvas.height = 128;
+            const imageData = noiseContext.createImageData(128, 128);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const color = Math.random() * 255;
+                imageData.data[i] = color; // Red
+                imageData.data[i + 1] = color; // Green
+                imageData.data[i + 2] = color; // Blue
+                imageData.data[i + 3] = 255;   // Alpha
             }
-            const texture = new THREE.DataTexture(data, noiseSize, noiseSize, THREE.RGBFormat);
-            texture.needsUpdate = true;
+            noiseContext.putImageData(imageData, 0, 0);
+            const texture = new THREE.CanvasTexture(noiseCanvas);
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
 
             // Geometry and material setup
             const geometry = new THREE.BoxGeometry();
@@ -51,8 +58,8 @@
                     void main() {
                         vec2 dx = dFdx(vUv) * brightness;
                         vec2 dy = dFdy(vUv) * brightness;
-                        vec3 noise = texture2D(noiseTexture, vUv).rgb;
-                        gl_FragColor = vec4(abs(dx.x), abs(dy.y), noise.b, 1.0);
+                        float noiseValue = texture2D(noiseTexture, vUv).b; // Use the blue channel for noise
+                        gl_FragColor = vec4(abs(dx.x), abs(dy.y), noiseValue, 1.0);
                     }
                 `,
                 uniforms: {
