@@ -63,8 +63,9 @@
             // Create a canvas and draw Gaussian noise
             const noiseCanvas = document.createElement('canvas');
             const noiseContext = noiseCanvas.getContext('2d');
-            let noiseres = 4096
-            noiseres *= 4 //Slow to load but better
+            let noiseres = 1024
+            // noiseres *= 4 //Slow to load but better
+            // noiseres *= 4 //Slow to load but better
             noiseCanvas.width = noiseCanvas.height = noiseres;
             const imageData = noiseContext.createImageData(noiseres, noiseres);
             for (let i = 0; i < imageData.data.length; i += 4) {
@@ -206,6 +207,7 @@
     <option value="torus">Torus</option>
     <option value="tetrahedron">Tetrahedron</option>
     <option value="sphere">Sphere</option>
+    <option value="random">Random Cubes</option>
 `;
             geometryDropdown.value = 'sphere';
             geometryDropdown.addEventListener('change', function () {
@@ -230,7 +232,45 @@
                     case 'tetrahedron':
                         newGeometry = new THREE.TetrahedronGeometry();
                         break;
+
+                    case 'random':
+                        //Currently broken garbles mush lol its ok claude made it
+                        const originalSize = cube.scale.x;
+                        const randomSize = () => originalSize * (Math.random() * 0.6 + 0.3);
+                        const randomPosition = () => (Math.random() - 0.5) * originalSize;
+
+                        const cubeGeometry = new THREE.BoxGeometry();
+                        const positions = [];
+                        const normals = [];
+                        const uvs = [];
+
+                        for (let i = 0; i < 3; i++) {
+                            const randomCube = new THREE.Mesh(cubeGeometry);
+                            randomCube.scale.set(randomSize(), randomSize(), randomSize());
+                            randomCube.position.set(randomPosition(), randomPosition(), randomPosition());
+                            randomCube.updateMatrix();
+
+                            const cubePositions = randomCube.geometry.attributes.position.array;
+                            const cubeNormals = randomCube.geometry.attributes.normal.array;
+                            const cubeUvs = randomCube.geometry.attributes.uv.array;
+
+                            for (let j = 0; j < cubePositions.length; j += 3) {
+                                const vertex = new THREE.Vector3(cubePositions[j], cubePositions[j + 1], cubePositions[j + 2]);
+                                vertex.applyMatrix4(randomCube.matrix);
+                                positions.push(vertex.x, vertex.y, vertex.z);
+                                normals.push(cubeNormals[j], cubeNormals[j + 1], cubeNormals[j + 2]);
+                                uvs.push(cubeUvs[j / 3 * 2], cubeUvs[j / 3 * 2 + 1]);
+                            }
+                        }
+
+                        newGeometry = new THREE.BufferGeometry();
+                        newGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                        newGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+                        newGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+
+                        break;
                 }
+
                 cube.geometry.dispose();
                 cube.geometry = newGeometry;
             });
