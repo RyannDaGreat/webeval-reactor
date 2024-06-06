@@ -497,6 +497,7 @@ function Image({ path, cacheKey, isSelected, onSelect, index, style, onRightClic
         }
     };
 
+
     const handleContextMenu = (event) => {
         event.preventDefault();
         onRightClick(path);
@@ -786,7 +787,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     return (
                         <div
                             key={path}
-                            style={{ height: '100%', width: '100%' }}
+                            style={{ height: '100%', width: '100%', pointerEvents: 'all' }}
                             onMouseEnter={() => handleMouseEnter(path)}
                             onMouseLeave={handleMouseLeave}
                         >
@@ -825,6 +826,9 @@ function ImagesGrid({ paths, imgProps = {} }) {
 
 
 function getRawImageUrl(path) {
+    if (!path) {
+        return []
+    }
     const pathsplit = path.split('/');
     const name = pathsplit[pathsplit.length - 1]
     const url = webeval.buildQueryUrl('/webeval/web/bytes/' + name, {
