@@ -33,6 +33,10 @@
         .slider {
             width: 80%;
         }
+canvas{
+    image-rendering:pixelated;
+    image-rendering: crisp-edges;
+}
     </style>
 </head>
 
@@ -63,9 +67,10 @@
             // Create a canvas and draw Gaussian noise
             const noiseCanvas = document.createElement('canvas');
             const noiseContext = noiseCanvas.getContext('2d');
-            let noiseres = 1024
+            let noiseres = 256
             noiseres *=4 //Slow to load but better
             noiseres *=4 //Slow to load but better
+            // noiseres *=4 //Slow to load but better
             noiseCanvas.width = noiseCanvas.height = noiseres;
             const imageData = noiseContext.createImageData(noiseres, noiseres);
             for (let i = 0; i < imageData.data.length; i += 4) {
@@ -126,7 +131,7 @@
                     vec3 noiseColor = texture2D(noiseTexture, vUv).rgb;
                     noiseColor=(noiseColor-.5);
                     float factor=1.0;
-                    factor*= sqrt(det);
+                    // factor*= sqrt(det);
                     //  factor*= det; //Wrong! Has to be sqrt
                     factor=max(1.0,factor);
                     noiseColor=noiseColor*vec3(factor);
