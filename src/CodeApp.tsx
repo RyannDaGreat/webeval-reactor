@@ -16,6 +16,7 @@ import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
 
 import { IconButton, ButtonToolbar } from 'rsuite';
 import { Toggle } from 'rsuite';
+import { Modal } from 'rsuite';
 import { Loader } from 'rsuite';
 import { Pagination } from 'rsuite';
 
@@ -79,7 +80,7 @@ def load_image_bytes(path: str) -> bytes:
     image = rp.labeled_image(image, title, size=60)
     image_bytes = rp.encode_image_to_bytes(image, 'jpg', quality=95)
     return image_bytes
-    
+
     # return rp.file_to_bytes(path) #Just loads the file raw
 `;
 
@@ -92,6 +93,13 @@ def load_image_bytes(path: str) -> bytes:
 
 exeval_toaster(initPythonCode, { sync: true });
 
+
+const initHiddenPythonCode = `
+def load_image_bytes_raw(path: str) -> bytes:
+    return rp.file_to_bytes(path) #Just loads the file raw
+`
+
+exeval_toaster(initHiddenPythonCode, { sync: true })
 
 interface IntegerControlProps {
     value: number;
@@ -457,7 +465,7 @@ const ExevalEditor: React.FC = ({ code, setCode, onRun }) => {
 //     return <img src={url} {...imgProps} />;
 // }
 
-function Image({ path, cacheKey, isSelected, onSelect, index, style, ...imgProps }) {
+function Image({ path, cacheKey, isSelected, onSelect, index, style, onRightClick, ...imgProps }) {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
     const url = webeval.buildQueryUrl('/webeval/web/bytes/webeval_image.png', {
@@ -489,53 +497,75 @@ function Image({ path, cacheKey, isSelected, onSelect, index, style, ...imgProps
         }
     };
 
-    return (
-        <div style={{
-            textAlign: 'center',
-            position: 'relative',
-            height: "calc(100% - 4px)%",
-            width: "calc(100% - 4px)%",
-        }} onMouseDown={handleClick}>
+    const handleContextMenu = (event) => {
+        event.preventDefault();
+        onRightClick(path);
+    };
 
+    return (
+        <div
+            style={{
+                textAlign: 'center',
+                position: 'relative',
+                height: "calc(100% - 4px)%",
+                width: "calc(100% - 4px)%",
+            }}
+            onMouseDown={handleClick}
+            onContextMenu={handleContextMenu}
+        >
             {isLoading && (
-                <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: 1,
-                    color: 'white',
-                    textShadow: '0px 0px 10px rgba(0, 0, 0, 1)',
-                }}>
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 1,
+                        color: 'white',
+                        textShadow: '0px 0px 10px rgba(0, 0, 0, 1)',
+                    }}
+                >
                     Loading...
                     <br />
                     <Loader size="xs" content="" />
                 </div>
-
             )}
-            <div style={{
-            }}>
+            <div>
                 {hasError && (
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'white', zIndex: 1 }}>
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            color: 'white',
+                            zIndex: 1,
+                        }}
+                    >
                         Error
                     </div>
                 )}
-                {/* <div style={{ fontSize: '5pt', opacity: 0.5, marginTop: '2px' }}>{filename}</div> */}
                 <img
                     src={url}
                     onLoad={handleImageLoad}
                     onError={handleImageError}
                     loading="lazy"
                     style={{
-                        ...style, border: isSelected ? '2px dashed yellow' : 'none',
+                        ...style,
+                        border: isSelected ? '2px dashed yellow' : 'none',
                         boxShadow: isSelected ? '0 0 5px black' : 'none',
                         height: isSelected ? 'calc(100% - 4px)' : '100%',
                         width: isSelected ? 'calc(100% - 4px)' : '100%',
-                        filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
+                        filter: isLoading
+                            ? 'blur(5px)'
+                            : hasError
+                                ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)'
+                                : 'none',
                         transition: 'filter 0.3s',
                     }}
                     {...imgProps}
-                /></div>
+                />
+            </div>
         </div>
     );
 }
@@ -562,6 +592,8 @@ function ImagesGrid({ paths, imgProps = {} }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [hoverPath, setHoverPath] = useState(null);
     const [showHoverZoom, setShowHoverZoom] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalImagePath, setModalImagePath] = useState(null);
 
     const handleRollShiftChange = (value) => {
         setRollShift(modulo(value, filteredPaths.length));
@@ -626,6 +658,15 @@ function ImagesGrid({ paths, imgProps = {} }) {
 
     const handleMouseLeave = () => {
         setHoverPath(null);
+    };
+
+    const handleRightClick = (path) => {
+        setModalImagePath(path);
+        setModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setModalOpen(false);
     };
 
     const columnWidth = `${100 / numColumns}%`;
@@ -745,6 +786,7 @@ function ImagesGrid({ paths, imgProps = {} }) {
                     return (
                         <div
                             key={path}
+                            style={{ height: '100%', width: '100%' }}
                             onMouseEnter={() => handleMouseEnter(path)}
                             onMouseLeave={handleMouseLeave}
                         >
@@ -756,15 +798,41 @@ function ImagesGrid({ paths, imgProps = {} }) {
                                 style={imgStyle}
                                 {...imgProps}
                                 index={index}
+                                onRightClick={handleRightClick}
                             />
                         </div>
                     );
                 })}
             </div>
+            <Modal open={modalOpen} onClose={handleCloseModal}>
+                <Modal.Header>
+                    <Modal.Title>Image Details</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>{modalImagePath}</p>
+                    <br />
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                        <img src={getRawImageUrl(modalImagePath)} alt={modalImagePath} style={{ maxWidth: '100%' }} />
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button onClick={handleCloseModal}>Close</Button>
+                </Modal.Footer>
+            </Modal>
         </>
     );
 }
 
+
+function getRawImageUrl(path) {
+    const pathsplit = path.split('/');
+    const name = pathsplit[pathsplit.length - 1]
+    const url = webeval.buildQueryUrl('/webeval/web/bytes/' + name, {
+        code: `load_image_bytes_raw(${JSON.stringify(path)})`,
+        content_type: 'image/png',
+    });
+    return url
+}
 
 const App: React.FC = () => {
     // const [state, setState] = React.useState<Record<string, { type: 'integer' | 'text' | 'integerTags'; value: number | string | Record<string, number>; description?: string; min?: number; max?: number; tags?: string[] }>>({
