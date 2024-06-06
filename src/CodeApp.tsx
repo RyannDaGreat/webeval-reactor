@@ -493,8 +493,8 @@ function Image({ path, cacheKey, isSelected, onSelect, index, style, ...imgProps
         <div style={{
             textAlign: 'center',
             position: 'relative',
-height:"calc(100% - 4px)%",
-width:"calc(100% - 4px)%",
+            height: "calc(100% - 4px)%",
+            width: "calc(100% - 4px)%",
         }} onMouseDown={handleClick}>
 
             {isLoading && (
@@ -526,12 +526,14 @@ width:"calc(100% - 4px)%",
                     onLoad={handleImageLoad}
                     onError={handleImageError}
                     loading="lazy"
-                    style={{...style,            border: isSelected ? '2px dashed yellow' : 'none',
-                    boxShadow: isSelected ? '0 0 5px black' : 'none',
-                    height: isSelected ? 'calc(100% - 4px)' : '100%',
-                    width: isSelected ? 'calc(100% - 4px)' : '100%',
-                    filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
-                transition: 'filter 0.3s',}}
+                    style={{
+                        ...style, border: isSelected ? '2px dashed yellow' : 'none',
+                        boxShadow: isSelected ? '0 0 5px black' : 'none',
+                        height: isSelected ? 'calc(100% - 4px)' : '100%',
+                        width: isSelected ? 'calc(100% - 4px)' : '100%',
+                        filter: isLoading ? 'blur(5px)' : hasError ? 'grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8)' : 'none',
+                        transition: 'filter 0.3s',
+                    }}
                     {...imgProps}
                 /></div>
         </div>
