@@ -17,8 +17,9 @@
         }
 
         canvas {
-            width: 100vw;
-            height: 80vh;
+            /* width: 100vw; */
+            /* height: 80vh; */
+            height:10px;
         }
 
         #controls {
@@ -51,16 +52,20 @@ canvas{
         <label for="pauseCheckbox">Play/Pause:</label>
         <input type="checkbox" id="pauseCheckbox" checked>
     </div>
+    <div height="400px">
+    <canvas id="RenderingCanvas"></canvas>
+</div>
     <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(24, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer();
+            const renderer = new THREE.WebGLRenderer({canvas: document.getElementById('RenderingCanvas')});
 
             // Set pixel ratio for retina displays
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight * 0.8); // Adjust for control panel
+            // renderer.setSize(window.innerWidth, window.innerHeight * 0.8); // Adjust for control panel
+            renderer.setSize(4096*2, 4096*2); // Adjust for control panel
 
             document.body.insertBefore(renderer.domElement, document.getElementById('controls'));
             let paused = false
@@ -70,7 +75,7 @@ canvas{
             let noiseres = 256
             noiseres *=4 //Slow to load but better
             noiseres *=4 //Slow to load but better
-            // noiseres *=4 //Slow to load but better
+            noiseres *=4 //Slow to load but better
             noiseCanvas.width = noiseCanvas.height = noiseres;
             const imageData = noiseContext.createImageData(noiseres, noiseres);
             for (let i = 0; i < imageData.data.length; i += 4) {
@@ -124,6 +129,7 @@ canvas{
                 varying vec2 vUv;
                 uniform float brightness;
                 uniform sampler2D noiseTexture;
+
                 void main() {
                     vec2 dx = dFdx(vUv) * brightness;
                     vec2 dy = dFdy(vUv) * brightness;
@@ -131,12 +137,31 @@ canvas{
                     vec3 noiseColor = texture2D(noiseTexture, vUv).rgb;
                     noiseColor=(noiseColor-.5);
                     float factor=1.0;
-                    // factor*= sqrt(det);
-                    //  factor*= det; //Wrong! Has to be sqrt
-                    factor=max(1.0,factor);
+                    factor*= sqrt(det);
+                    // factor=max(1.0,factor); //If we zoom in so far we see pixels individually, don't gray them...
                     noiseColor=noiseColor*vec3(factor);
-                    // noiseColor=noiseColor*vec3(20);
                     noiseColor=(noiseColor+.5);
+
+
+                    //Variables for the next sections...
+                    float edgeLengthX = length(dx);
+                    float edgeLengthY = length(dy);
+                    float perimeter = (edgeLengthX + edgeLengthY) * 2.0;
+                    float area =det;// abs(dx.x * dy.y - dy.x * dx.y);
+                    
+                    // //Where the texture is squashed too much anisotropic filtering looks bad
+                    // //Detect this and eliminate it
+                    // float stretch = (perimeter / 4.0) / sqrt(area);
+                    // bool isOblique = stretch < 2.25; // Adjust threshold as needed
+                    // noiseColor = isOblique ? noiseColor  : vec3(9990.0) ;
+
+                    // //Where the texture is so big you can see pixels we need to do something...
+                    // //Detect this and eliminate it
+                    // // float expansion = max(perimeter/4.0,sqrt(area));
+                    // float expansion = min(edgeLengthX, edgeLengthY);
+                    // bool expand = expansion <= 2.0; // Adjust threshold as needed
+                    // noiseColor = expand ? vec3(.750) : noiseColor;
+
                     gl_FragColor = vec4(noiseColor, 1.0);
                 } 
             `,
@@ -165,7 +190,7 @@ canvas{
 
             camera.position.z = 5;
 
-            let animspeed = .001;
+            let animspeed = .001/10;
             function animate() {
                 requestAnimationFrame(animate);
                 cube.rotation.x += animspeed * !paused;
@@ -187,9 +212,9 @@ canvas{
             });
 
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / (window.innerHeight * 0.8);
+                // camera.aspect = window.innerWidth / (window.innerHeight * 0.8);
                 camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight * 0.8);
+                // renderer.setSize(window.innerWidth, window.innerHeight * 0.8);
             });
 
             let speedSlider = document.getElementById('speedSlider');
