@@ -4,7 +4,7 @@ import './index.css';
 import AppBrowser from './App';
 import AppCode from './CodeApp';
 import reportWebVitals from './reportWebVitals';
-import { Tabs, Placeholder } from 'rsuite';
+import { Tabs } from 'rsuite';
 
 
 const root = ReactDOM.createRoot(
